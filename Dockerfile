@@ -13,3 +13,5 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/abi ./abi
 ENV PORT=80
 CMD npm run start:prod
+
+EXPOSE 80
