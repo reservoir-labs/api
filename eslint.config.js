@@ -12,7 +12,8 @@ export default [
     },
     rules: {
       'semi': ['error', 'always'],
-      'quotes': ['error', 'single']
+      'quotes': ['error', 'single'],
+      'object-curly-spacing': ['error', 'always'],
     }
   }
 ];
