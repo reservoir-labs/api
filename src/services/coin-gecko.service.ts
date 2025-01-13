@@ -17,7 +17,7 @@ export class CoinGeckoService implements OnModuleInit
                 ids: ["ethereum"],
                 vs_currencies: ["usd"],
             })
-        ).data.vechain.usd;
+        ).data.ethereum.usd;
         console.log(`ETH price: ${this.mEthPrice}`);
     }
 

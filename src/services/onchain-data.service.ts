@@ -37,12 +37,14 @@ export class OnchainDataService implements OnModuleInit {
             abi: GenericFactoryABI,
         };
 
-        const numPairs = await this.publicClient.readContract({
+        const allPairs = await this.publicClient.readContract({
             ...factoryContract,
-            functionName: 'allPairsLength',
+            functionName: 'allPairs',
         });
 
-        const promises: Promise<void>[] = times(Number(numPairs), async(i: number) => {
+        const numPairs = allPairs.length;
+
+        const promises: Promise<void>[] = times(numPairs, async(i: number) => {
             const pairAddress = await this.publicClient.readContract({
                 ...factoryContract,
                 functionName: 'allPairs',
