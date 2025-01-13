@@ -21,7 +21,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "eslintConfig": {
-    "extends": ["eslint:recommended"]
+    "extends": [
+      "eslint:recommended"
+    ]
   },
   "prettier": {
     "singleQuote": false,
@@ -39,13 +41,13 @@
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
     "coingecko-api": "1.0.10",
-    "ethers": "6.13.5",
     "fastify-helmet": "7.1.0",
     "fastify-swagger": "5.2.0",
     "reflect-metadata": "0.2.2",
     "rimraf": "6.0.1",
     "rxjs": "7.8.1",
-    "vexchange-sdk": "1.1.1"
+    "vexchange-sdk": "1.1.1",
+    "viem": "2.22.7"
   },
   "devDependencies": {
     "@nestjs/cli": "10.4.9",

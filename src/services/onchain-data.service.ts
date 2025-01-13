@@ -10,8 +10,7 @@ import { CoinGeckoService } from "@services/coin-gecko.service";
 import { Driver, SimpleNet } from "@vechain/connex-driver";
 import { Framework } from "@vechain/connex-framework";
 import { Mutex } from "async-mutex";
-import { BigNumber, ethers } from "ethers";
-import { formatEther, parseUnits } from "ethers/lib/utils";
+import {Address, parseUnits, getAddress, formatEther} from "viem";
 import { find, times } from "lodash";
 import { FACTORY_ADDRESS, WVET } from "vexchange-sdk";
 
@@ -66,13 +65,13 @@ export class OnchainDataService implements OnModuleInit
         const promises: Promise<void>[] = times(numPairs, async(i: number) =>
         {
             const res: Connex.VM.Output & Connex.Thor.Account.WithDecoded = await method.call(i);
-            const pairAddress: string = ethers.utils.getAddress(res.decoded[0]);
+            const pairAddress: Address = res.decoded[0];
             const pairContract: Connex.Thor.Account.Visitor = this.Connex.thor.account(pairAddress);
 
-            const token0Address: string = ethers.utils.getAddress((await pairContract.method(token0ABI).call())
+            const token0Address: string = getAddress((await pairContract.method(token0ABI).call())
                 .decoded[0]);
 
-            const token1Address: string = ethers.utils.getAddress((await pairContract.method(token1ABI).call())
+            const token1Address: string = getAddress((await pairContract.method(token1ABI).call())
                 .decoded[0]);
 
             const swapFee: string = (await pairContract.method(swapFeeABI).call()).decoded[0];
@@ -90,15 +89,13 @@ export class OnchainDataService implements OnModuleInit
                 await pairContract.method(getReservesABI).call()
             ).decoded;
 
-            const reserve0BN: BigNumber = parseUnits(reserve0, 18 - token0.decimals);
-            const reserve1BN: BigNumber = parseUnits(reserve1, 18 - token1.decimals);
+            const reserve0BN: bigint = parseUnits(reserve0, 18 - token0.decimals);
+            const reserve1BN: bigint = parseUnits(reserve1, 18 - token1.decimals);
 
             // Accounts for tokens with different decimal places
-            const price: BigNumber = (reserve0BN.eq(0) || reserve1BN.eq(0))
-                ? ethers.constants.Zero
-                : reserve0BN
-                    .mul(parseUnits("1")) // For added precision for BigNumber arithmetic
-                    .div(reserve1BN);
+            const price: bigint = (reserve0BN === 0n || reserve1BN === 0n)
+                ? 0n
+                : reserve0BN * 10n ** 18n / reserve1BN; // TODO: replace constant with WAD
 
             const swapEvent: Connex.Thor.Account.Event = pairContract.event(swapEventABI);
 
@@ -115,8 +112,8 @@ export class OnchainDataService implements OnModuleInit
             let offset: number = 0;
             const limit: number = 256;
 
-            let accToken0Volume: BigNumber = ethers.constants.Zero;
-            let accToken1Volume: BigNumber = ethers.constants.Zero;
+            let accToken0Volume: bigint = 0n;
+            let accToken1Volume: bigint = 0n;
 
             // Need a while loop because we can only get
             // up to 256 events each round using connex
@@ -128,11 +125,11 @@ export class OnchainDataService implements OnModuleInit
                 for (const transaction of result)
                 {
                     accToken0Volume = accToken0Volume
-                        .add(transaction.decoded.amount0In)
-                        .add(transaction.decoded.amount0Out);
+                        + transaction.decoded.amount0In
+                        + transaction.decoded.amount0Out;
                     accToken1Volume = accToken1Volume
-                        .add(transaction.decoded.amount1In)
-                        .add(transaction.decoded.amount1Out);
+                        + transaction.decoded.amount1In
+                        + transaction.decoded.amount1Out;
                 }
 
                 if (result.length === limit) { offset += limit; }
