@@ -2,8 +2,8 @@
 
 // Contract Addresses
 export const CONTRACTS = {
-  FACTORY_ADDRESS: '' as const,
-  WETH: '' as const,
+  FACTORY_ADDRESS: '0xDd723D9273642D82c5761a4467fD5265d94a22da' as const,
+  WETH: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7' as const,
 } as const;
 
 // API Endpoints

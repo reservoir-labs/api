@@ -1,4 +1,4 @@
-# Vexchange API
+# Reservoir Finance REST API
   
 ## Description
 The readonly API for Reservoir Finance, simply efficient DeFi on arbitrum.

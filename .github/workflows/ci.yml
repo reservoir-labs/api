@@ -11,7 +11,7 @@ on:
       - dev
 
 jobs:
-  vexchange-api-ci:
+  test:
     name: Vexchange API - CI
     runs-on: ubuntu-latest
     steps:

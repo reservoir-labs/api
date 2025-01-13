@@ -33,7 +33,7 @@ export class OnchainDataService implements OnModuleInit {
     @Interval(INTERVALS.FETCH_DATA)
     private async fetch(): Promise<void> {
         const factoryContract = {
-            address: CONTRACTS.FACTORY_ADDRESS as `0x${string}`,
+            address: CONTRACTS.FACTORY_ADDRESS,
             abi: GenericFactoryABI,
         };
 
@@ -45,11 +45,7 @@ export class OnchainDataService implements OnModuleInit {
         const numPairs = allPairs.length;
 
         const promises: Promise<void>[] = times(numPairs, async(i: number) => {
-            const pairAddress = await this.publicClient.readContract({
-                ...factoryContract,
-                functionName: 'allPairs',
-                args: [BigInt(i)],
-            }) as Address;
+            const pairAddress = allPairs[i];
 
             const pairContract = {
                 address: pairAddress,
@@ -79,6 +75,8 @@ export class OnchainDataService implements OnModuleInit {
                 }),
             ]);
 
+            console.log('reserves', reserves)
+
             const [token0, token1] = await this.mutex.runExclusive(() => {
                 return Promise.all([
                     this.fetchToken(getAddress(token0Address)),
@@ -86,7 +84,7 @@ export class OnchainDataService implements OnModuleInit {
                 ]);
             });
 
-            const { reserve0, reserve1 } = reserves as { reserve0: bigint, reserve1: bigint };
+            const [ reserve0, reserve1 ] = reserves as [ reserve0: bigint, reserve1: bigint, lastUpdate: bigint, index: bigint ];
 
             const reserve0BN: bigint = parseUnits(reserve0.toString(), token0.decimals);
             const reserve1BN: bigint = parseUnits(reserve1.toString(), token1.decimals);
@@ -96,7 +94,8 @@ export class OnchainDataService implements OnModuleInit {
                 : reserve0BN * 10n ** 18n / reserve1BN;
 
             const blockNumber = await this.publicClient.getBlockNumber();
-            const fromBlock = blockNumber - BigInt(INTERVALS.BLOCK_RANGE);
+            const fromBlock = blockNumber - 2040n
+              // - BigInt(INTERVALS.BLOCK_RANGE); // block limit is 2048 blocks.
 
             const swapLogs = await this.publicClient.getLogs({
                 address: pairAddress,
@@ -105,10 +104,9 @@ export class OnchainDataService implements OnModuleInit {
                     name: 'Swap',
                     inputs: [
                         { type: 'address', name: 'sender', indexed: true },
-                        { type: 'uint256', name: 'amount0In' },
-                        { type: 'uint256', name: 'amount1In' },
-                        { type: 'uint256', name: 'amount0Out' },
-                        { type: 'uint256', name: 'amount1Out' },
+                        { type: 'bool', name: 'zeroForOne' },
+                        { type: 'uint256', name: 'amountIn' },
+                        { type: 'uint256', name: 'amountOut' },
                         { type: 'address', name: 'to', indexed: true }
                     ],
                 },
@@ -123,9 +121,9 @@ export class OnchainDataService implements OnModuleInit {
                 const { args } = log;
                 if (args) {
                     accToken0Volume = accToken0Volume +
-                        (args.amount0In as bigint) + (args.amount0Out as bigint);
+                        (args.amountIn as bigint) + (args.amountOut as bigint);
                     accToken1Volume = accToken1Volume +
-                        (args.amount1In as bigint) + (args.amount1Out as bigint);
+                        (args.amountIn as bigint) + (args.amountOut as bigint);
                 }
             }
 
