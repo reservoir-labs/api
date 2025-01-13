@@ -75,8 +75,6 @@ export class OnchainDataService implements OnModuleInit {
                 }),
             ]);
 
-            console.log('reserves', reserves)
-
             const [token0, token1] = await this.mutex.runExclusive(() => {
                 return Promise.all([
                     this.fetchToken(getAddress(token0Address)),
