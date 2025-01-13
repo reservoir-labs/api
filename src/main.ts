@@ -31,7 +31,7 @@ async function bootstrap()
     });
 
     const config: Omit<OpenAPIObject, "paths"> = new DocumentBuilder()
-        .setTitle("Vexchange API")
+        .setTitle("Reservoir Finance API")
         .setVersion(<string>process.env.npm_package_version)
         .build();
     const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
