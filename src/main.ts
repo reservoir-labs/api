@@ -9,7 +9,11 @@ import { writeFileSync } from "fs";
 
 async function bootstrap()
 {
-    const fastifyAdapter: FastifyAdapter = new FastifyAdapter({ logger: false });
+    const fastifyAdapter: FastifyAdapter = new FastifyAdapter({
+        logger: false,
+        ignoreTrailingSlash: true,
+        disableRequestLogging: true,
+    });
 
     // don't throw when Content-Type is different from 'application/json' and 'text/plain'
     // https://www.fastify.io/docs/latest/Reference/ContentTypeParser/#catch-all
