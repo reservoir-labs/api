@@ -1,6 +1,6 @@
 {
   "name": "reservoir-api",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Read-only API for Reservoir AMM and MM data",
   "author": "",
   "private": true,
@@ -51,7 +51,10 @@
     "@nestjs/schematics": "10.2.3",
     "@nestjs/testing": "10.4.15",
     "@types/jest": "29.5.14",
-    "@types/node": "22.10.5"
+    "@types/node": "22.10.5",
+    "@typescript-eslint/eslint-plugin": "8.19.1",
+    "@typescript-eslint/parser": "8.19.1",
+    "eslint": "9.18.0"
   },
   "jest": {
     "moduleFileExtensions": [
