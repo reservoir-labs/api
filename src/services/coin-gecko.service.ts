@@ -6,18 +6,19 @@ import * as CoinGecko from "coingecko-api";
 export class CoinGeckoService implements OnModuleInit
 {
     private mClient: typeof CoinGecko | undefined;
-    private mVetPrice: number = 0;
+    private mEthPrice: number = 0;
 
     @Interval(60000)
     private async fetch(): Promise<void>
     {
         if (this.mClient === undefined) { throw new Error("Client undefined"); }
-        this.mVetPrice = (
+        this.mEthPrice = (
             await this.mClient.simple.price({
-                ids: ["vechain"],
+                ids: ["ethereum"],
                 vs_currencies: ["usd"],
             })
         ).data.vechain.usd;
+        console.log(`ETH price: ${this.mEthPrice}`);
     }
 
     public onModuleInit(): void
@@ -26,8 +27,8 @@ export class CoinGeckoService implements OnModuleInit
         this.fetch();
     }
 
-    public getVetPrice(): number
+    public getEthPrice(): number
     {
-        return this.mVetPrice;
+        return this.mEthPrice;
     }
 }

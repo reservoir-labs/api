@@ -1,6 +1,6 @@
 import { erc20Abi } from "viem";
-import { VexchangeV2FactoryABI } from "@abi/VexchangeV2Factory";
-import { VexchangeV2PairABI } from "@abi/VexchangeV2Pair";
+import { GenericFactoryABI } from "@abi/GenericFactory";
+import { ReservoirPairABI } from "@abi/ReservoirPair";
 import { IPair, IPairs } from "@interfaces/pair";
 import { IToken, ITokens } from "@interfaces/token";
 import { forwardRef, Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
@@ -9,15 +9,15 @@ import { Interval } from "@nestjs/schedule";
 import { CoinGeckoService } from "@services/coin-gecko.service";
 import { Mutex } from "async-mutex";
 import { Address, parseUnits, getAddress, formatEther, http, createPublicClient, PublicClient } from "viem";
-import { find, times } from "lodash";
-import { FACTORY_ADDRESS, WVET } from "vexchange-sdk";
+import { times } from "lodash";
+import {API_ENDPOINT, CONTRACTS, INTERVALS} from "@src/constants";
 
 @Injectable()
 export class OnchainDataService implements OnModuleInit {
     private pairs: IPairs = {};
     private tokens: ITokens = {};
     private readonly mutex: Mutex = new Mutex();
-    private readonly httpTransport = http('https://mainnet.veblocks.net');
+    private readonly httpTransport = http(API_ENDPOINT.RPC_URL);
     private publicClient: PublicClient = createPublicClient({
         transport: this.httpTransport,
     });
@@ -30,11 +30,11 @@ export class OnchainDataService implements OnModuleInit {
         private readonly configService: ConfigService,
     ) {}
 
-    @Interval(60000)
+    @Interval(INTERVALS.FETCH_DATA)
     private async fetch(): Promise<void> {
         const factoryContract = {
-            address: FACTORY_ADDRESS as `0x${string}`,
-            abi: VexchangeV2FactoryABI,
+            address: CONTRACTS.FACTORY_ADDRESS as `0x${string}`,
+            abi: GenericFactoryABI,
         };
 
         const numPairs = await this.publicClient.readContract({
@@ -51,7 +51,7 @@ export class OnchainDataService implements OnModuleInit {
 
             const pairContract = {
                 address: pairAddress,
-                abi: VexchangeV2PairABI,
+                abi: ReservoirPairABI,
             };
 
             const [token0Address, token1Address, swapFee, platformFee, reserves] = await Promise.all([
@@ -94,7 +94,7 @@ export class OnchainDataService implements OnModuleInit {
                 : reserve0BN * 10n ** 18n / reserve1BN;
 
             const blockNumber = await this.publicClient.getBlockNumber();
-            const fromBlock = blockNumber - BigInt(8640);
+            const fromBlock = blockNumber - BigInt(INTERVALS.BLOCK_RANGE);
 
             const swapLogs = await this.publicClient.getLogs({
                 address: pairAddress,
@@ -184,7 +184,7 @@ export class OnchainDataService implements OnModuleInit {
 
     private calculateUsdPrices(): void
     {
-        this.tokens[WVET["1"].address].usdPrice = this.coingeckoService.getVetPrice();
+        this.tokens[CONTRACTS.WETH].usdPrice = this.coingeckoService.getEthPrice();
         for (const pairAddress in this.pairs)
         {
             const pair: IPair = this.pairs[pairAddress];
@@ -195,12 +195,12 @@ export class OnchainDataService implements OnModuleInit {
             else if (pair.token0.symbol === "WVET")
             {
                 this.tokens[pair.token1.contractAddress].usdPrice =
-                  this.coingeckoService.getVetPrice() * parseFloat(pair.price);
+                  this.coingeckoService.getEthPrice() * parseFloat(pair.price);
             }
             else if (pair.token1.symbol === "WVET")
             {
                 this.tokens[pair.token0.contractAddress].usdPrice =
-                  this.coingeckoService.getVetPrice() / parseFloat(pair.price);
+                  this.coingeckoService.getEthPrice() / parseFloat(pair.price);
             }
         }
     }
