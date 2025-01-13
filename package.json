@@ -2,6 +2,7 @@
   "name": "reservoir-api",
   "version": "0.1.0",
   "description": "Read-only API for Reservoir AMM and MM data",
+  "type": "module",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
@@ -20,7 +21,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "eslintConfig": {
-    "extends": ""
+    "extends": ["eslint:recommended"]
   },
   "prettier": {
     "singleQuote": false,
