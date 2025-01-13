@@ -2,7 +2,6 @@
   "name": "reservoir-api",
   "version": "0.1.0",
   "description": "Read-only API for Reservoir AMM and MM data",
-  "type": "module",
   "author": "",
   "private": true,
   "license": "UNLICENSED",

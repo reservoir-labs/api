@@ -1,4 +1,4 @@
-import { IERC20ABI } from "@abi/IERC20";
+import { erc20Abi } from "viem";
 import { VexchangeV2FactoryABI } from "@abi/VexchangeV2Factory";
 import { VexchangeV2PairABI } from "@abi/VexchangeV2Pair";
 import { IPair, IPairs } from "@interfaces/pair";
@@ -7,21 +7,21 @@ import { forwardRef, Inject, Injectable, Logger, OnModuleInit } from "@nestjs/co
 import { ConfigService } from "@nestjs/config";
 import { Interval } from "@nestjs/schedule";
 import { CoinGeckoService } from "@services/coin-gecko.service";
-import { Driver, SimpleNet } from "@vechain/connex-driver";
-import { Framework } from "@vechain/connex-framework";
 import { Mutex } from "async-mutex";
-import {Address, parseUnits, getAddress, formatEther} from "viem";
+import { Address, parseUnits, getAddress, formatEther, http, createPublicClient, PublicClient } from "viem";
 import { find, times } from "lodash";
 import { FACTORY_ADDRESS, WVET } from "vexchange-sdk";
 
 @Injectable()
-export class OnchainDataService implements OnModuleInit
-{
+export class OnchainDataService implements OnModuleInit {
     private pairs: IPairs = {};
     private tokens: ITokens = {};
     private readonly mutex: Mutex = new Mutex();
-    private mConnex: Connex | undefined = undefined;
-    private mFactoryContract: Connex.Thor.Account.Visitor | undefined = undefined;
+    private readonly httpTransport = http('https://mainnet.veblocks.net');
+    private publicClient: PublicClient = createPublicClient({
+        transport: this.httpTransport,
+    });
+
     private readonly logger: Logger = new Logger(OnchainDataService.name, { timestamp: true });
 
     public constructor(
@@ -30,110 +30,101 @@ export class OnchainDataService implements OnModuleInit
         private readonly configService: ConfigService,
     ) {}
 
-    private get Connex(): Connex
-    {
-        if (this.mConnex === undefined) { throw new Error("Connex not initialised"); }
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return this.mConnex!;
-    }
-
-    private get FactoryContract(): Connex.Thor.Account.Visitor
-    {
-        if (this.mFactoryContract === undefined) { throw new Error("FactoryContract not initialised"); }
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return this.mFactoryContract!;
-    }
-
     @Interval(60000)
-    private async fetch(): Promise<void>
-    {
-        const allPairsLengthABI: object = find(VexchangeV2FactoryABI, {
-            name: "allPairsLength",
+    private async fetch(): Promise<void> {
+        const factoryContract = {
+            address: FACTORY_ADDRESS as `0x${string}`,
+            abi: VexchangeV2FactoryABI,
+        };
+
+        const numPairs = await this.publicClient.readContract({
+            ...factoryContract,
+            functionName: 'allPairsLength',
         });
-        let method: Connex.Thor.Account.Method = this.FactoryContract.method(allPairsLengthABI);
-        const numPairs: number = parseInt((await method.call()).decoded[0]);
-        const allPairs: object = find(VexchangeV2FactoryABI, { name: "allPairs" });
-        const token0ABI: object = find(VexchangeV2PairABI, { name: "token0" });
-        const token1ABI: object = find(VexchangeV2PairABI, { name: "token1" });
-        const getReservesABI: object = find(VexchangeV2PairABI, { name: "getReserves" });
-        const swapFeeABI: object = find(VexchangeV2PairABI, { name: "swapFee" });
-        const platformFeeABI: object = find(VexchangeV2PairABI, { name: "platformFee" });
-        const swapEventABI: object = find(VexchangeV2PairABI, { name: "Swap" });
 
-        method = this.FactoryContract.method(allPairs);
+        const promises: Promise<void>[] = times(Number(numPairs), async(i: number) => {
+            const pairAddress = await this.publicClient.readContract({
+                ...factoryContract,
+                functionName: 'allPairs',
+                args: [BigInt(i)],
+            }) as Address;
 
-        const promises: Promise<void>[] = times(numPairs, async(i: number) =>
-        {
-            const res: Connex.VM.Output & Connex.Thor.Account.WithDecoded = await method.call(i);
-            const pairAddress: Address = res.decoded[0];
-            const pairContract: Connex.Thor.Account.Visitor = this.Connex.thor.account(pairAddress);
+            const pairContract = {
+                address: pairAddress,
+                abi: VexchangeV2PairABI,
+            };
 
-            const token0Address: string = getAddress((await pairContract.method(token0ABI).call())
-                .decoded[0]);
+            const [token0Address, token1Address, swapFee, platformFee, reserves] = await Promise.all([
+                this.publicClient.readContract({
+                    ...pairContract,
+                    functionName: 'token0',
+                }),
+                this.publicClient.readContract({
+                    ...pairContract,
+                    functionName: 'token1',
+                }),
+                this.publicClient.readContract({
+                    ...pairContract,
+                    functionName: 'swapFee',
+                }),
+                this.publicClient.readContract({
+                    ...pairContract,
+                    functionName: 'platformFee',
+                }),
+                this.publicClient.readContract({
+                    ...pairContract,
+                    functionName: 'getReserves',
+                }),
+            ]);
 
-            const token1Address: string = getAddress((await pairContract.method(token1ABI).call())
-                .decoded[0]);
-
-            const swapFee: string = (await pairContract.method(swapFeeABI).call()).decoded[0];
-            const platformFee: string = (await pairContract.method(platformFeeABI).call()).decoded[0];
-
-            const [token0, token1] = await this.mutex.runExclusive(() =>
-            {
+            const [token0, token1] = await this.mutex.runExclusive(() => {
                 return Promise.all([
-                    this.fetchToken(token0Address),
-                    this.fetchToken(token1Address),
+                    this.fetchToken(getAddress(token0Address)),
+                    this.fetchToken(getAddress(token1Address)),
                 ]);
             });
 
-            const { reserve0, reserve1 } = (
-                await pairContract.method(getReservesABI).call()
-            ).decoded;
+            const { reserve0, reserve1 } = reserves as { reserve0: bigint, reserve1: bigint };
 
-            const reserve0BN: bigint = parseUnits(reserve0, 18 - token0.decimals);
-            const reserve1BN: bigint = parseUnits(reserve1, 18 - token1.decimals);
+            const reserve0BN: bigint = parseUnits(reserve0.toString(), token0.decimals);
+            const reserve1BN: bigint = parseUnits(reserve1.toString(), token1.decimals);
 
-            // Accounts for tokens with different decimal places
             const price: bigint = (reserve0BN === 0n || reserve1BN === 0n)
                 ? 0n
-                : reserve0BN * 10n ** 18n / reserve1BN; // TODO: replace constant with WAD
+                : reserve0BN * 10n ** 18n / reserve1BN;
 
-            const swapEvent: Connex.Thor.Account.Event = pairContract.event(swapEventABI);
+            const blockNumber = await this.publicClient.getBlockNumber();
+            const fromBlock = blockNumber - BigInt(8640);
 
-            const swapFilter: Connex.Thor.Filter<"event", Connex.Thor.Account.WithDecoded>
-                  = swapEvent.filter([]).range({
-                      unit: "block",
-                      // Since every block is 10s, 8640 blocks will be 24h
-                      from: this.Connex.thor.status.head.number - 8640,
-                      // Current block number
-                      to: this.Connex.thor.status.head.number,
-                  });
-
-            let end: boolean = false;
-            let offset: number = 0;
-            const limit: number = 256;
+            const swapLogs = await this.publicClient.getLogs({
+                address: pairAddress,
+                event: {
+                    type: 'event',
+                    name: 'Swap',
+                    inputs: [
+                        { type: 'address', name: 'sender', indexed: true },
+                        { type: 'uint256', name: 'amount0In' },
+                        { type: 'uint256', name: 'amount1In' },
+                        { type: 'uint256', name: 'amount0Out' },
+                        { type: 'uint256', name: 'amount1Out' },
+                        { type: 'address', name: 'to', indexed: true }
+                    ],
+                },
+                fromBlock,
+                toBlock: blockNumber,
+            });
 
             let accToken0Volume: bigint = 0n;
             let accToken1Volume: bigint = 0n;
 
-            // Need a while loop because we can only get
-            // up to 256 events each round using connex
-            while (!end)
-            {
-                const result: Connex.Thor.Filter.Row<"event", Connex.Thor.Account.WithDecoded>[] =
-                    await swapFilter.apply(offset, limit);
-
-                for (const transaction of result)
-                {
-                    accToken0Volume = accToken0Volume
-                        + transaction.decoded.amount0In
-                        + transaction.decoded.amount0Out;
-                    accToken1Volume = accToken1Volume
-                        + transaction.decoded.amount1In
-                        + transaction.decoded.amount1Out;
+            for (const log of swapLogs) {
+                const { args } = log;
+                if (args) {
+                    accToken0Volume = accToken0Volume +
+                        (args.amount0In as bigint) + (args.amount0Out as bigint);
+                    accToken1Volume = accToken1Volume +
+                        (args.amount1In as bigint) + (args.amount1Out as bigint);
                 }
-
-                if (result.length === limit) { offset += limit; }
-                else { end = true; }
             }
 
             this.pairs[pairAddress] = {
@@ -143,43 +134,48 @@ export class OnchainDataService implements OnModuleInit
                 price: formatEther(price),
                 swapFee: `${(Number(swapFee) / 100)}%`,
                 platformFee: `${(Number(platformFee) / 100)}%`,
-                token0Reserve: formatEther(parseUnits(reserve0, 18 - token0.decimals)),
-                token1Reserve: formatEther(parseUnits(reserve1, 18 - token1.decimals)),
+                token0Reserve: formatEther(parseUnits(reserve0.toString(), 18 - token0.decimals)),
+                token1Reserve: formatEther(parseUnits(reserve1.toString(), 18 - token1.decimals)),
                 token0Volume: formatEther(parseUnits(accToken0Volume.toString(), 18 - token0.decimals)),
                 token1Volume: formatEther(parseUnits(accToken1Volume.toString(), 18 - token1.decimals)),
             };
         });
+
         await Promise.all(promises);
         this.calculateUsdPrices();
         this.filterMissingUsdTokens();
     }
 
-    private async fetchToken(address: string): Promise<IToken>
+    private async fetchToken(address: Address): Promise<IToken>
     {
         if (address in this.tokens) return this.tokens[address];
 
-        const nameABI: object = find(IERC20ABI, { name: "name" });
-        const symbolABI: object = find(IERC20ABI, { name: "symbol" });
-        const decimalsABI: object = find(IERC20ABI, { name: "decimals" });
+        const contract = {
+            abi: erc20Abi,
+            address: address as `0x${string}`,
+        };
 
-        const symbol: string = (
-            await this.Connex.thor.account(address).method(symbolABI).call()
-        ).decoded[0];
+        const symbol: string = await this.publicClient.readContract({
+            ...contract,
+            functionName: 'symbol',
+        });
 
-        const name: string = (
-            await this.Connex.thor.account(address).method(nameABI).call()
-        ).decoded[0];
+        const name: string = await this.publicClient.readContract({
+            ...contract,
+            functionName: 'name',
+        });
 
-        const decimals: string = (
-            await this.Connex.thor.account(address).method(decimalsABI).call()
-        ).decoded[0];
+        const decimals: number = await this.publicClient.readContract({
+            ...contract,
+            functionName: 'decimals',
+        });
 
         const token: IToken = {
             name,
             symbol,
             contractAddress: address,
             usdPrice: undefined,
-            decimals: parseInt(decimals),
+            decimals,
         };
 
         this.tokens[address] = token;
@@ -220,14 +216,7 @@ export class OnchainDataService implements OnModuleInit
         }
     }
 
-    public async onModuleInit(): Promise<void>
-    {
-        const net: SimpleNet = new SimpleNet("https://mainnet.veblocks.net");
-        const driver: Driver = await Driver.connect(net);
-        this.mConnex = new Framework(driver);
-
-        this.mFactoryContract = this.Connex.thor.account(FACTORY_ADDRESS);
-
+    public async onModuleInit(): Promise<void> {
         this.logger.log("Fetching on chain data...");
         await this.fetch();
         this.logger.log("Fetching on chain data completed");
