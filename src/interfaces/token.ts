@@ -1,7 +1,9 @@
+import { Address } from "viem";
+
 export interface IToken {
   name: string;
   symbol: string;
-  contractAddress: string;
+  contractAddress: Address;
   usdPrice: number | undefined;
   decimals: number;
 }

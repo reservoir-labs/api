@@ -2,7 +2,7 @@ import { IToken, ITokens } from "@interfaces/token";
 import { BadRequestException, Controller, Get, NotFoundException, Param } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { OnchainDataService } from "@services/onchain-data.service";
-import { isAddress } from "ethers/lib/utils";
+import { isAddress } from "viem";
 
 @Controller({ path: "tokens", version: "1" })
 @ApiTags("tokens")
