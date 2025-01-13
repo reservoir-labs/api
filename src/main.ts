@@ -4,7 +4,7 @@ import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "@src/app.module";
-import { fastifyHelmet } from "fastify-helmet";
+import helmet from "@fastify/helmet";
 import { writeFileSync } from "fs";
 
 async function bootstrap()
@@ -39,7 +39,7 @@ async function bootstrap()
     SwaggerModule.setup("/", app, document);
 
     app.enableShutdownHooks();
-    await app.register(fastifyHelmet, {
+    await app.register(helmet, {
         contentSecurityPolicy: false,
     });
     app.useGlobalPipes(new ValidationPipe());

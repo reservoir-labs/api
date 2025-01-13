@@ -3,6 +3,13 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "plugins": ["@nestjs/swagger"],
-    "tsConfigPath": "tsconfig.json"
+    "tsConfigPath": "tsconfig.json",
+    "assets": [
+      {
+        "include": "../abi/**/*",
+        "outDir": "dist/abi",
+        "watchAssets": true
+      }
+    ]
   }
 }

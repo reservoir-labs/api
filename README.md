@@ -1,7 +1,7 @@
 # Vexchange API
   
 ## Description
-The readonly API for Vexchange, the Leading DEX on VeChain.
+The readonly API for Reservoir Finance, simply efficient DeFi on arbitrum.
 
 ## Installation
 The use of NVM (node version manager) is recommended.

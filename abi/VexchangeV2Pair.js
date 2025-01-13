@@ -1,4 +1,4 @@
-const VexchangeV2PairABI = [
+export const VexchangeV2PairABI = [
     {
         'anonymous': false,
         'inputs': [
@@ -933,7 +933,3 @@ const VexchangeV2PairABI = [
         'type': 'function',
     },
 ];
-
-module.exports = {
-    VexchangeV2PairABI,
-};

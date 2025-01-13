@@ -1,4 +1,4 @@
-const VexchangeV2FactoryABI = [
+export const VexchangeV2FactoryABI = [
     {
         'inputs': [
             {
@@ -538,7 +538,3 @@ const VexchangeV2FactoryABI = [
         'type': 'function',
     },
 ];
-
-module.exports = {
-    VexchangeV2FactoryABI,
-};
