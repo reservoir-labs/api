@@ -31,55 +31,49 @@ export class OnchainDataService implements OnModuleInit {
         private readonly configService: ConfigService,
     ) {}
 
+    private getContract(address: Address, abi: any) {
+        return { address, abi };
+    }
+
     @Interval(INTERVALS.FETCH_DATA)
     private async fetch(): Promise<void> {
-        const factoryContract = {
-            address: CONTRACTS.FACTORY_ADDRESS,
-            abi: GenericFactoryABI,
-        };
+        const factoryContract = this.getContract(CONTRACTS.FACTORY_ADDRESS, GenericFactoryABI);
 
-        const allPairs = await this.publicClient.readContract({
+        const allPairs: Address[] = await this.publicClient.readContract({
             ...factoryContract,
             functionName: 'allPairs',
-        });
+            args: []
+        }) as Address[];
 
         const numPairs = allPairs.length;
 
-        // Prepare multicall contracts
         const pairCalls = allPairs.flatMap((pairAddress) => [
             {
-                address: pairAddress,
-                abi: ReservoirPairABI,
+                ...this.getContract(pairAddress, ReservoirPairABI),
                 functionName: 'token0',
             },
             {
-                address: pairAddress,
-                abi: ReservoirPairABI,
+                ...this.getContract(pairAddress, ReservoirPairABI),
                 functionName: 'token1',
             },
             {
-                address: pairAddress,
-                abi: ReservoirPairABI,
+                ...this.getContract(pairAddress, ReservoirPairABI),
                 functionName: 'swapFee',
             },
             {
-                address: pairAddress,
-                abi: ReservoirPairABI,
+                ...this.getContract(pairAddress, ReservoirPairABI),
                 functionName: 'platformFee',
             },
             {
-                address: pairAddress,
-                abi: ReservoirPairABI,
+                ...this.getContract(pairAddress, ReservoirPairABI),
                 functionName: 'getReserves',
             },
             {
-                address: pairAddress,
-                abi: ReservoirPairABI,
+                ...this.getContract(pairAddress, ReservoirPairABI),
                 functionName: 'token0Managed',
             },
             {
-                address: pairAddress,
-                abi: ReservoirPairABI,
+                ...this.getContract(pairAddress, ReservoirPairABI),
                 functionName: 'token1Managed',
             }
         ]);
@@ -111,12 +105,9 @@ export class OnchainDataService implements OnModuleInit {
 
             const [reserve0, reserve1] = reserves as [bigint, bigint, bigint, bigint];
 
-            const reserve0BN: bigint = parseUnits(reserve0.toString(), token0.decimals);
-            const reserve1BN: bigint = parseUnits(reserve1.toString(), token1.decimals);
-
-            const price: bigint = (reserve0BN === 0n || reserve1BN === 0n)
+            const price: bigint = (reserve0 === 0n || reserve1 === 0n)
                 ? 0n
-                : reserve0BN * 10n ** 18n / reserve1BN;
+                : reserve0 * 10n ** 18n / reserve1;
 
             const blockNumber = await this.publicClient.getBlockNumber();
             const fromBlock = blockNumber - 2040n
@@ -163,8 +154,8 @@ export class OnchainDataService implements OnModuleInit {
                 token1Reserve: formatUnits(reserve1, token1.decimals),
                 token0Volume: formatUnits(accToken0Volume, token0.decimals),
                 token1Volume: formatUnits(accToken1Volume, token1.decimals),
-                token0Managed: formatUnits(token0Managed, token0.decimals),
-                token1Managed: formatUnits(token1Managed, token1.decimals),
+                token0Managed: formatUnits(token0Managed as bigint, token0.decimals),
+                token1Managed: formatUnits(token1Managed as bigint, token1.decimals),
             };
         });
 
@@ -178,18 +169,15 @@ export class OnchainDataService implements OnModuleInit {
 
         const tokenCalls = [
             {
-                address,
-                abi: erc20Abi,
+                ...this.getContract(address, erc20Abi),
                 functionName: 'symbol',
             },
             {
-                address,
-                abi: erc20Abi,
+                ...this.getContract(address, erc20Abi),
                 functionName: 'name',
             },
             {
-                address,
-                abi: erc20Abi,
+                ...this.getContract(address, erc20Abi),
                 functionName: 'decimals',
             },
         ];
