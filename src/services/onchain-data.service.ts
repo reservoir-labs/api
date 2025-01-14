@@ -10,16 +10,18 @@ import { CoinGeckoService } from "@services/coin-gecko.service";
 import { Mutex } from "async-mutex";
 import { Address, parseUnits, getAddress, formatEther, http, createPublicClient, PublicClient } from "viem";
 import { times } from "lodash";
-import {API_ENDPOINT, CONTRACTS, INTERVALS} from "@src/constants";
+import { CONTRACTS, INTERVALS} from "@src/constants";
+import { avalanche } from "viem/chains";
 
 @Injectable()
 export class OnchainDataService implements OnModuleInit {
     private pairs: IPairs = {};
     private tokens: ITokens = {};
     private readonly mutex: Mutex = new Mutex();
-    private readonly httpTransport = http(API_ENDPOINT.RPC_URL);
+    private readonly httpTransport = http(avalanche.rpcUrls.default.http[0]);
     private publicClient: PublicClient = createPublicClient({
         transport: this.httpTransport,
+        chain: avalanche,
     });
 
     private readonly logger: Logger = new Logger(OnchainDataService.name, { timestamp: true });
@@ -44,45 +46,59 @@ export class OnchainDataService implements OnModuleInit {
 
         const numPairs = allPairs.length;
 
-        const promises: Promise<void>[] = times(numPairs, async(i: number) => {
-            const pairAddress = allPairs[i];
-
-            const pairContract = {
+        // Prepare multicall contracts
+        const pairCalls = allPairs.flatMap((pairAddress) => [
+            {
                 address: pairAddress,
                 abi: ReservoirPairABI,
-            };
+                functionName: 'token0',
+            },
+            {
+                address: pairAddress,
+                abi: ReservoirPairABI,
+                functionName: 'token1',
+            },
+            {
+                address: pairAddress,
+                abi: ReservoirPairABI,
+                functionName: 'swapFee',
+            },
+            {
+                address: pairAddress,
+                abi: ReservoirPairABI,
+                functionName: 'platformFee',
+            },
+            {
+                address: pairAddress,
+                abi: ReservoirPairABI,
+                functionName: 'getReserves',
+            },
+        ]);
 
-            const [token0Address, token1Address, swapFee, platformFee, reserves] = await Promise.all([
-                this.publicClient.readContract({
-                    ...pairContract,
-                    functionName: 'token0',
-                }),
-                this.publicClient.readContract({
-                    ...pairContract,
-                    functionName: 'token1',
-                }),
-                this.publicClient.readContract({
-                    ...pairContract,
-                    functionName: 'swapFee',
-                }),
-                this.publicClient.readContract({
-                    ...pairContract,
-                    functionName: 'platformFee',
-                }),
-                this.publicClient.readContract({
-                    ...pairContract,
-                    functionName: 'getReserves',
-                }),
-            ]);
+        const pairResults = await this.publicClient.multicall({
+            contracts: pairCalls,
+        });
+
+        const promises = times(numPairs, async (i: number) => {
+            const pairAddress = allPairs[i];
+            const baseIndex = i * 5;
+
+            const [token0Address, token1Address, swapFee, platformFee, reserves] = [
+                pairResults[baseIndex].result,
+                pairResults[baseIndex + 1].result,
+                pairResults[baseIndex + 2].result,
+                pairResults[baseIndex + 3].result,
+                pairResults[baseIndex + 4].result,
+            ];
 
             const [token0, token1] = await this.mutex.runExclusive(() => {
                 return Promise.all([
-                    this.fetchToken(getAddress(token0Address)),
-                    this.fetchToken(getAddress(token1Address)),
+                    this.fetchToken(getAddress(token0Address as Address)),
+                    this.fetchToken(getAddress(token1Address as Address)),
                 ]);
             });
 
-            const [ reserve0, reserve1 ] = reserves as [ reserve0: bigint, reserve1: bigint, lastUpdate: bigint, index: bigint ];
+            const [reserve0, reserve1] = reserves as [bigint, bigint, bigint, bigint];
 
             const reserve0BN: bigint = parseUnits(reserve0.toString(), token0.decimals);
             const reserve1BN: bigint = parseUnits(reserve1.toString(), token1.decimals);
@@ -144,36 +160,37 @@ export class OnchainDataService implements OnModuleInit {
         this.filterMissingUsdTokens();
     }
 
-    private async fetchToken(address: Address): Promise<IToken>
-    {
+    private async fetchToken(address: Address): Promise<IToken> {
         if (address in this.tokens) return this.tokens[address];
 
-        const contract = {
-            abi: erc20Abi,
-            address: address as `0x${string}`,
-        };
+        const tokenCalls = [
+            {
+                address,
+                abi: erc20Abi,
+                functionName: 'symbol',
+            },
+            {
+                address,
+                abi: erc20Abi,
+                functionName: 'name',
+            },
+            {
+                address,
+                abi: erc20Abi,
+                functionName: 'decimals',
+            },
+        ];
 
-        const symbol: string = await this.publicClient.readContract({
-            ...contract,
-            functionName: 'symbol',
-        });
-
-        const name: string = await this.publicClient.readContract({
-            ...contract,
-            functionName: 'name',
-        });
-
-        const decimals: number = await this.publicClient.readContract({
-            ...contract,
-            functionName: 'decimals',
+        const [symbolResult, nameResult, decimalsResult] = await this.publicClient.multicall({
+            contracts: tokenCalls,
         });
 
         const token: IToken = {
-            name,
-            symbol,
+            name: nameResult.result as string,
+            symbol: symbolResult.result as string,
             contractAddress: address,
             usdPrice: undefined,
-            decimals,
+            decimals: decimalsResult.result as number,
         };
 
         this.tokens[address] = token;
