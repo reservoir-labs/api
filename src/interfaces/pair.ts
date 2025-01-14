@@ -2,6 +2,7 @@ import { IToken } from "@interfaces/token";
 
 export interface IPair {
   address: string;
+  curveId: number;
   token0: IToken;
   token1: IToken;
   price: string;

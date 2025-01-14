@@ -145,6 +145,7 @@ export class OnchainDataService implements OnModuleInit {
 
             this.pairs[pairAddress] = {
                 address: pairAddress,
+                curveId: 0,
                 token0,
                 token1,
                 price: formatEther(price),

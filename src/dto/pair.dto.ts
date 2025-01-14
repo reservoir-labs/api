@@ -10,6 +10,12 @@ export class PairDto implements IPair {
   address!: string;
 
   @ApiProperty({
+    description: 'Curve ID. 0 for constant product. 1 for stable',
+    example: 1
+  })
+  curveId!: number;
+
+  @ApiProperty({
     description: 'First token in the pair',
     type: 'object',
     additionalProperties: true
