@@ -1,4 +1,3 @@
-import { erc20Abi } from "viem";
 import { GenericFactoryABI } from "@abi/GenericFactory";
 import { ReservoirPairABI } from "@abi/ReservoirPair";
 import { IPair, IPairs } from "@interfaces/pair";
@@ -8,7 +7,7 @@ import { ConfigService } from "@nestjs/config";
 import { Interval } from "@nestjs/schedule";
 import { CoinGeckoService } from "@services/coin-gecko.service";
 import { Mutex } from "async-mutex";
-import { Address, parseUnits, getAddress, formatEther, http, createPublicClient, PublicClient } from "viem";
+import { erc20Abi, formatUnits, Address, parseUnits, getAddress, formatEther, http, createPublicClient, PublicClient } from "viem";
 import { times } from "lodash";
 import { CONTRACTS, INTERVALS} from "@src/constants";
 import { avalanche } from "viem/chains";
@@ -73,6 +72,16 @@ export class OnchainDataService implements OnModuleInit {
                 abi: ReservoirPairABI,
                 functionName: 'getReserves',
             },
+            {
+                address: pairAddress,
+                abi: ReservoirPairABI,
+                functionName: 'token0Managed',
+            },
+            {
+                address: pairAddress,
+                abi: ReservoirPairABI,
+                functionName: 'token1Managed',
+            }
         ]);
 
         const pairResults = await this.publicClient.multicall({
@@ -81,14 +90,16 @@ export class OnchainDataService implements OnModuleInit {
 
         const promises = times(numPairs, async (i: number) => {
             const pairAddress = allPairs[i];
-            const baseIndex = i * 5;
+            const baseIndex = i * 7;
 
-            const [token0Address, token1Address, swapFee, platformFee, reserves] = [
+            const [token0Address, token1Address, swapFee, platformFee, reserves, token0Managed, token1Managed] = [
                 pairResults[baseIndex].result,
                 pairResults[baseIndex + 1].result,
                 pairResults[baseIndex + 2].result,
                 pairResults[baseIndex + 3].result,
                 pairResults[baseIndex + 4].result,
+                pairResults[baseIndex + 5].result,
+                pairResults[baseIndex + 6].result,
             ];
 
             const [token0, token1] = await this.mutex.runExclusive(() => {
@@ -148,10 +159,12 @@ export class OnchainDataService implements OnModuleInit {
                 price: formatEther(price),
                 swapFee: `${(Number(swapFee) / 100)}%`,
                 platformFee: `${(Number(platformFee) / 100)}%`,
-                token0Reserve: formatEther(parseUnits(reserve0.toString(), 18 - token0.decimals)),
-                token1Reserve: formatEther(parseUnits(reserve1.toString(), 18 - token1.decimals)),
-                token0Volume: formatEther(parseUnits(accToken0Volume.toString(), 18 - token0.decimals)),
-                token1Volume: formatEther(parseUnits(accToken1Volume.toString(), 18 - token1.decimals)),
+                token0Reserve: formatUnits(reserve0, token0.decimals),
+                token1Reserve: formatUnits(reserve1, token1.decimals),
+                token0Volume: formatUnits(accToken0Volume, token0.decimals),
+                token1Volume: formatUnits(accToken1Volume, token1.decimals),
+                token0Managed: formatUnits(token0Managed, token0.decimals),
+                token1Managed: formatUnits(token1Managed, token1.decimals),
             };
         });
 

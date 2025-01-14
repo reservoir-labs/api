@@ -15,7 +15,7 @@ export class PairDto implements IPair {
     additionalProperties: true
   })
   token0!: IToken;
-  
+
   @ApiProperty({
     description: 'Second token in the pair',
     type: 'object',
@@ -64,4 +64,16 @@ export class PairDto implements IPair {
     example: '336487.684316643656557238'
   })
   token1Volume!: string;
+
+  @ApiProperty({
+    description: 'Amount of token0Managed',
+    example: '336487.684316643656557238'
+  })
+  token0Managed!: string;
+
+  @ApiProperty({
+    description: 'Amount of token1Managed',
+    example: '336487.684316643656557238'
+  })
+  token1Managed!: string;
 }

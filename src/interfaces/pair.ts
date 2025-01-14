@@ -11,6 +11,8 @@ export interface IPair {
   token1Reserve: string;
   token0Volume: string;
   token1Volume: string;
+  token0Managed: string;
+  token1Managed: string;
 }
 
 export interface IPairs {
