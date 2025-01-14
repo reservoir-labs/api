@@ -6,6 +6,7 @@ import { DocumentBuilder, OpenAPIObject, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "@src/app.module";
 import helmet from "@fastify/helmet";
 import { writeFileSync } from "fs";
+import { PairDto } from "./dto/pair.dto";
 
 async function bootstrap()
 {
@@ -38,7 +39,9 @@ async function bootstrap()
         .setTitle("Reservoir Finance API")
         .setVersion(<string>process.env.npm_package_version)
         .build();
-    const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
+    const document: OpenAPIObject = SwaggerModule.createDocument(app, config, {
+        extraModels: [PairDto],
+    });
     writeFileSync("./swagger-spec.json", JSON.stringify(document));
     SwaggerModule.setup("/", app, document);
 
