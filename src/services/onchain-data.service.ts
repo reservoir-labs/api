@@ -125,8 +125,6 @@ export class OnchainDataService implements OnModuleInit {
         });
 
         await Promise.all(promises);
-        this.calculateUsdPrices();
-        this.filterMissingUsdTokens();
     }
 
     private getContract(address: Address, abi: any) {
@@ -192,46 +190,12 @@ export class OnchainDataService implements OnModuleInit {
             name: nameResult.result as string,
             symbol: symbolResult.result as string,
             contractAddress: address,
-            usdPrice: undefined,
+            usdPrice: await this.coingeckoService.getCoinPrice(symbolResult.result as string),
             decimals: decimalsResult.result as number,
         };
 
         this.tokens[address] = token;
         return token;
-    }
-
-    private calculateUsdPrices(): void
-    {
-        this.tokens[CONTRACTS.WETH].usdPrice = this.coingeckoService.getEthPrice();
-        for (const pairAddress in this.pairs)
-        {
-            const pair: IPair = this.pairs[pairAddress];
-            if (pair.token0.symbol !== "WETH" && pair.token1.symbol !== "WETH")
-            {
-                continue;
-            }
-            else if (pair.token0.symbol === "WETH")
-            {
-                this.tokens[pair.token1.contractAddress].usdPrice =
-                  this.coingeckoService.getEthPrice() * parseFloat(pair.price);
-            }
-            else if (pair.token1.symbol === "WETH")
-            {
-                this.tokens[pair.token0.contractAddress].usdPrice =
-                  this.coingeckoService.getEthPrice() / parseFloat(pair.price);
-            }
-        }
-    }
-
-    private filterMissingUsdTokens(): void
-    {
-        for (const tokenAddress in this.tokens)
-        {
-            if (this.tokens[tokenAddress].usdPrice === undefined)
-            {
-                delete this.tokens[tokenAddress];
-            }
-        }
     }
 
     public async onModuleInit(): Promise<void> {
