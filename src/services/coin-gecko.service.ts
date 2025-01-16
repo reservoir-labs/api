@@ -38,6 +38,8 @@ export class CoinGeckoService implements OnModuleInit
 
         if (process.env.COINGECKO_API_KEY) {
             headers['x-cg-demo-api-key'] = process.env.COINGECKO_API_KEY;
+        } else {
+            this.logger.warn("COINGECKO_API_KEY env variable not set. Using public API");
         }
 
         try {
