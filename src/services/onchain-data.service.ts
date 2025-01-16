@@ -22,11 +22,10 @@ export class OnchainDataService implements OnModuleInit {
         transport: this.httpTransport,
         chain: avalanche,
     });
-
     private readonly logger: Logger = new Logger(OnchainDataService.name, { timestamp: true });
 
     public constructor(
-        @Inject(forwardRef(() => CoinGeckoService))
+        @Inject(CoinGeckoService)
         private readonly coingeckoService: CoinGeckoService,
         private readonly configService: ConfigService,
     ) {}
