@@ -40,40 +40,8 @@ export class OnchainDataService implements OnModuleInit {
             functionName: 'allPairs',
             args: []
         }) as Address[];
-
         const numPairs = allPairs.length;
-
-        const pairCalls = allPairs.flatMap((pairAddress) => [
-            {
-                ...this.getContract(pairAddress, ReservoirPairABI),
-                functionName: 'token0',
-            },
-            {
-                ...this.getContract(pairAddress, ReservoirPairABI),
-                functionName: 'token1',
-            },
-            {
-                ...this.getContract(pairAddress, ReservoirPairABI),
-                functionName: 'swapFee',
-            },
-            {
-                ...this.getContract(pairAddress, ReservoirPairABI),
-                functionName: 'platformFee',
-            },
-            {
-                ...this.getContract(pairAddress, ReservoirPairABI),
-                functionName: 'getReserves',
-            },
-            {
-                ...this.getContract(pairAddress, ReservoirPairABI),
-                functionName: 'token0Managed',
-            },
-            {
-                ...this.getContract(pairAddress, ReservoirPairABI),
-                functionName: 'token1Managed',
-            }
-        ]);
-
+        const pairCalls = this.generatePairCalls(allPairs)
         const pairResults = await this.publicClient.multicall({
             contracts: pairCalls,
         });
@@ -164,6 +132,39 @@ export class OnchainDataService implements OnModuleInit {
 
     private getContract(address: Address, abi: any) {
         return { address, abi };
+    }
+
+    private generatePairCalls(pairs: Address[]) {
+        return pairs.flatMap((pairAddress) => [
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'token0',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'token1',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'swapFee',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'platformFee',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'getReserves',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'token0Managed',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'token1Managed',
+            }
+        ]);
     }
 
     private async fetchToken(address: Address): Promise<IToken> {
