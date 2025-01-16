@@ -16,6 +16,7 @@ export interface ITokenUSDPrice {
   name: string;
   symbol: string;
   usdPrice: number;
+  lastUpdated: number;
 }
 
 export interface ITokenUSDPrices {

@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ITokenUSDPrices } from "@interfaces/token";
 import * as process from "node:process";
+import { CACHE_DURATION } from "@src/constants";
 
 @Injectable()
 export class CoinGeckoService implements OnModuleInit
@@ -75,7 +76,8 @@ export class CoinGeckoService implements OnModuleInit
             this.tokens[symbol] = {
                 name: symbol,
                 symbol,
-                usdPrice
+                usdPrice,
+                lastUpdated: Date.now()
             };
         } catch (error) {
             this.logger.error(`Failed to fetch ${symbol}: ${error}`);
@@ -90,10 +92,15 @@ export class CoinGeckoService implements OnModuleInit
         this.logger.log("Fetching native token USD Price completed");
     }
 
-    // TODO: cache price for 5 minutes. If expired, fetch again
     public async getCoinPrice(symbol: string): Promise<number>
     {
-        if (this.tokens[symbol] === undefined) await this.fetch(symbol);
+        const token = this.tokens[symbol];
+        const now = Date.now();
+
+        if (!token || now - token.lastUpdated > CACHE_DURATION) {
+            await this.fetch(symbol);
+        }
+
         return this.tokens[symbol].usdPrice;
     }
 }
