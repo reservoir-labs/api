@@ -108,7 +108,7 @@ export class OnchainDataService implements OnModuleInit {
 
             this.pairs[pairAddress] = {
                 address: pairAddress,
-                curveId: 0,
+                curveId: 0, // TODD: how to figure out which curveId? Get from creation logs or attempt to call getCurrentAPrecise
                 token0,
                 token1,
                 price: formatEther(price),

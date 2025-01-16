@@ -28,7 +28,6 @@ export class CoinGeckoService implements OnModuleInit
         return symbol.endsWith('.e') ? symbol.slice(0, -2) : symbol;
     }
 
-    // TODO: rename symbol arg to tokenId or something as we're not really using the symbol
     private async fetch(symbol: string): Promise<void>
     {
         if (this.mClient === undefined) { throw new Error("Client undefined"); }
@@ -61,11 +60,7 @@ export class CoinGeckoService implements OnModuleInit
         this.logger.log("Fetching native token USD Price completed");
     }
 
-    public getEthPrice(): number
-    {
-        return this.tokens[this.ETHEREUM_SYM].usdPrice;
-    }
-
+    // TODO: cache price for 5 minutes. If expired, fetch again
     public async getCoinPrice(symbol: string): Promise<number>
     {
         if (this.tokens[symbol] === undefined) await this.fetch(symbol);
