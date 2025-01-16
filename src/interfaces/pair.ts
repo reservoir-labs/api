@@ -14,8 +14,8 @@ export interface IPair {
   token1Volume: string;
   token0Managed: string;
   token1Managed: string;
-  swapApr?: string;
-  supplyApr?: string;
+  swapApr?: number;
+  supplyApr?: number;
 }
 
 export interface IPairs {

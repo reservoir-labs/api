@@ -9,7 +9,7 @@ import { CoinGeckoService } from "@services/coin-gecko.service";
 import { Mutex } from "async-mutex";
 import { erc20Abi, formatUnits, Address, parseUnits, getAddress, formatEther, http, createPublicClient, PublicClient } from "viem";
 import { times } from "lodash";
-import { CONTRACTS, INTERVALS} from "@src/constants";
+import { CONTRACTS, INTERVALS } from "@src/constants";
 import { avalanche } from "viem/chains";
 
 @Injectable()
@@ -30,10 +30,6 @@ export class OnchainDataService implements OnModuleInit {
         private readonly coingeckoService: CoinGeckoService,
         private readonly configService: ConfigService,
     ) {}
-
-    private getContract(address: Address, abi: any) {
-        return { address, abi };
-    }
 
     @Interval(INTERVALS.FETCH_DATA)
     private async fetch(): Promise<void> {
@@ -109,9 +105,9 @@ export class OnchainDataService implements OnModuleInit {
                 ? 0n
                 : reserve0 * 10n ** 18n / reserve1;
 
-            const blockNumber = await this.publicClient.getBlockNumber();
-            const fromBlock = blockNumber - 2040n
-              // - BigInt(INTERVALS.BLOCK_RANGE); // block limit is 2048 blocks.
+            const toBlock = await this.publicClient.getBlockNumber();
+            const fromBlock = toBlock - 2040n
+              // - BigInt(INTERVALS.BLOCK_RANGE); // block limit is 2048 blocks. TODO: paginate the queries until we get 24h worth of logs.
 
             const swapLogs = await this.publicClient.getLogs({
                 address: pairAddress,
@@ -127,7 +123,7 @@ export class OnchainDataService implements OnModuleInit {
                     ],
                 },
                 fromBlock,
-                toBlock: blockNumber,
+                toBlock,
             });
 
             let accToken0Volume: bigint = 0n;
@@ -136,10 +132,10 @@ export class OnchainDataService implements OnModuleInit {
             for (const log of swapLogs) {
                 const { args } = log;
                 if (args) {
-                    accToken0Volume = accToken0Volume +
-                        (args.amountIn as bigint) + (args.amountOut as bigint);
-                    accToken1Volume = accToken1Volume +
-                        (args.amountIn as bigint) + (args.amountOut as bigint);
+                    if (args.amountIn !== undefined && args.amountOut !== undefined) {
+                        accToken0Volume += args.zeroForOne ? BigInt(args.amountIn) : BigInt(args.amountOut);
+                        accToken1Volume += args.zeroForOne ? BigInt(args.amountOut) : BigInt(args.amountIn);
+                    }
                 }
             }
 
@@ -157,12 +153,17 @@ export class OnchainDataService implements OnModuleInit {
                 token1Volume: formatUnits(accToken1Volume, token1.decimals),
                 token0Managed: formatUnits(token0Managed as bigint, token0.decimals),
                 token1Managed: formatUnits(token1Managed as bigint, token1.decimals),
+                swapApr: 0,
             };
         });
 
         await Promise.all(promises);
         this.calculateUsdPrices();
         this.filterMissingUsdTokens();
+    }
+
+    private getContract(address: Address, abi: any) {
+        return { address, abi };
     }
 
     private async fetchToken(address: Address): Promise<IToken> {
@@ -205,16 +206,16 @@ export class OnchainDataService implements OnModuleInit {
         for (const pairAddress in this.pairs)
         {
             const pair: IPair = this.pairs[pairAddress];
-            if (pair.token0.symbol !== "WVET" && pair.token1.symbol !== "WVET")
+            if (pair.token0.symbol !== "WETH" && pair.token1.symbol !== "WETH")
             {
                 continue;
             }
-            else if (pair.token0.symbol === "WVET")
+            else if (pair.token0.symbol === "WETH")
             {
                 this.tokens[pair.token1.contractAddress].usdPrice =
                   this.coingeckoService.getEthPrice() * parseFloat(pair.price);
             }
-            else if (pair.token1.symbol === "WVET")
+            else if (pair.token1.symbol === "WETH")
             {
                 this.tokens[pair.token0.contractAddress].usdPrice =
                   this.coingeckoService.getEthPrice() / parseFloat(pair.price);

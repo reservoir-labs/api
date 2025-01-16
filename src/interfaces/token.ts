@@ -11,3 +11,13 @@ export interface IToken {
 export interface ITokens {
   [key: string]: IToken;
 }
+
+export interface ITokenUSDPrice {
+  name: string;
+  symbol: string;
+  usdPrice: number;
+}
+
+export interface ITokenUSDPrices {
+  [key: string]: ITokenUSDPrice;
+}

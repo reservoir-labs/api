@@ -84,14 +84,14 @@ export class PairDto implements IPair {
   token1Managed!: string;
 
   @ApiProperty({
-    description: 'APR for swaps',
-    example: '0.5%'
+    description: 'APR for swaps, expressed as a percentage',
+    example: '10.5'
   })
-  swapApr?: string;
+  swapApr?: number;
 
   @ApiProperty({
     description: 'APR for supplying liquidity',
-    example: '0.5%'
+    example: '3.5'
   })
-  supplyApr?: string;
+  supplyApr?: number;
 }

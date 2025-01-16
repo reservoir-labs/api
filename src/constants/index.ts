@@ -13,6 +13,6 @@ export const API_ENDPOINT = {
 
 // Time intervals (in ms)
 export const INTERVALS = {
-  FETCH_DATA: 60000 as const, // 1 minute
+  FETCH_DATA: 300000 as const, // 5 minutes
   BLOCK_RANGE: 8640 as const, // Number of blocks to look back
 } as const;
