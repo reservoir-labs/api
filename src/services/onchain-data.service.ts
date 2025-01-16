@@ -1,13 +1,23 @@
 import { GenericFactoryABI } from "@abi/GenericFactory";
 import { ReservoirPairABI } from "@abi/ReservoirPair";
+import { ConstantProductPairABI } from "@abi/ConstantProductPair";
 import { IPair, IPairs } from "@interfaces/pair";
 import { IToken, ITokens } from "@interfaces/token";
-import { forwardRef, Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Interval } from "@nestjs/schedule";
 import { CoinGeckoService } from "@services/coin-gecko.service";
 import { Mutex } from "async-mutex";
-import { erc20Abi, formatUnits, Address, parseUnits, getAddress, formatEther, http, createPublicClient, PublicClient } from "viem";
+import {
+    erc20Abi,
+    formatUnits,
+    Address,
+    getAddress,
+    formatEther,
+    http,
+    createPublicClient,
+    PublicClient,
+} from "viem";
 import { times } from "lodash";
 import { CONTRACTS, INTERVALS } from "@src/constants";
 import { avalanche } from "viem/chains";
@@ -47,9 +57,9 @@ export class OnchainDataService implements OnModuleInit {
 
         const promises = times(numPairs, async (i: number) => {
             const pairAddress = allPairs[i];
-            const baseIndex = i * 7;
+            const baseIndex = i * 8;
 
-            const [token0Address, token1Address, swapFee, platformFee, reserves, token0Managed, token1Managed] = [
+            const [token0Address, token1Address, swapFee, platformFee, reserves, token0Managed, token1Managed, accuracy] = [
                 pairResults[baseIndex].result,
                 pairResults[baseIndex + 1].result,
                 pairResults[baseIndex + 2].result,
@@ -57,7 +67,10 @@ export class OnchainDataService implements OnModuleInit {
                 pairResults[baseIndex + 4].result,
                 pairResults[baseIndex + 5].result,
                 pairResults[baseIndex + 6].result,
+                pairResults[baseIndex + 7].result,
             ];
+
+            // console.log(accuracy)
 
             const [token0, token1] = await this.mutex.runExclusive(() => {
                 return Promise.all([
@@ -108,7 +121,7 @@ export class OnchainDataService implements OnModuleInit {
 
             this.pairs[pairAddress] = {
                 address: pairAddress,
-                curveId: 0, // TODD: how to figure out which curveId? Get from creation logs or attempt to call getCurrentAPrecise
+                curveId: accuracy === undefined ? 1 : 0, // only ConstantProductPair has this public variable named accuracy
                 token0,
                 token1,
                 price: formatEther(price),
@@ -160,6 +173,10 @@ export class OnchainDataService implements OnModuleInit {
             {
                 ...this.getContract(pairAddress, ReservoirPairABI),
                 functionName: 'token1Managed',
+            },
+            {
+                ...this.getContract(pairAddress, ConstantProductPairABI),
+                functionName: 'ACCURACY'
             }
         ]);
     }
