@@ -70,8 +70,6 @@ export class OnchainDataService implements OnModuleInit {
                 pairResults[baseIndex + 7].result,
             ];
 
-            // console.log(accuracy)
-
             const [token0, token1] = await this.mutex.runExclusive(() => {
                 return Promise.all([
                     this.fetchToken(getAddress(token0Address as Address)),

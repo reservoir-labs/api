@@ -12,6 +12,7 @@ import { config } from "@src/config";
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
+            cache: true,
             load: [config],
         }),
         // For scheduling recurring tasks

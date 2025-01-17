@@ -28,7 +28,7 @@ async function bootstrap()
     );
     const logger: Logger = new Logger("NestApplication", { timestamp: true });
     const configService: ConfigService = app.get(ConfigService);
-    const PORT: string =  <string>configService.get<string>("PORT");
+    const PORT: string =  <string>configService.get<string>("port");
 
     app.enableVersioning({
         type: VersioningType.URI,

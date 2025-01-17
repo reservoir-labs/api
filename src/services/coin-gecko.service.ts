@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { ITokenUSDPrices } from "@interfaces/token";
-import * as process from "node:process";
 import { CACHE_DURATION } from "@src/constants";
 
 @Injectable()
@@ -24,6 +24,8 @@ export class CoinGeckoService implements OnModuleInit
         'joe': 'joe'
     };
 
+    constructor(private readonly configService: ConfigService) {}
+
     private stripDotE(symbol: string): string {
         return symbol.endsWith('.e') ? symbol.slice(0, -2) : symbol;
     }
@@ -37,8 +39,9 @@ export class CoinGeckoService implements OnModuleInit
             accept: 'application/json'
         };
 
-        if (process.env.COINGECKO_API_KEY) {
-            headers['x-cg-demo-api-key'] = process.env.COINGECKO_API_KEY;
+        const apiKey = this.configService.get<string>('coingecko_api_key');
+        if (apiKey) {
+            headers['x-cg-demo-api-key'] = apiKey;
         } else {
             this.logger.warn("COINGECKO_API_KEY env variable not set. Using public API");
         }
