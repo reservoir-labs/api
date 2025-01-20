@@ -6,10 +6,15 @@ import { DocumentBuilder, OpenAPIObject, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "@src/app.module";
 import helmet from "@fastify/helmet";
 import { writeFileSync } from "fs";
+import { PairDto } from "./dto/pair.dto";
 
 async function bootstrap()
 {
-    const fastifyAdapter: FastifyAdapter = new FastifyAdapter({ logger: false });
+    const fastifyAdapter: FastifyAdapter = new FastifyAdapter({
+        logger: false,
+        ignoreTrailingSlash: true,
+        disableRequestLogging: true,
+    });
 
     // don't throw when Content-Type is different from 'application/json' and 'text/plain'
     // https://www.fastify.io/docs/latest/Reference/ContentTypeParser/#catch-all
@@ -23,7 +28,7 @@ async function bootstrap()
     );
     const logger: Logger = new Logger("NestApplication", { timestamp: true });
     const configService: ConfigService = app.get(ConfigService);
-    const PORT: string =  <string>configService.get<string>("PORT");
+    const PORT: string =  <string>configService.get<string>("port");
 
     app.enableVersioning({
         type: VersioningType.URI,
@@ -31,10 +36,12 @@ async function bootstrap()
     });
 
     const config: Omit<OpenAPIObject, "paths"> = new DocumentBuilder()
-        .setTitle("Vexchange API")
+        .setTitle("Reservoir Finance API")
         .setVersion(<string>process.env.npm_package_version)
         .build();
-    const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
+    const document: OpenAPIObject = SwaggerModule.createDocument(app, config, {
+        extraModels: [PairDto],
+    });
     writeFileSync("./swagger-spec.json", JSON.stringify(document));
     SwaggerModule.setup("/", app, document);
 

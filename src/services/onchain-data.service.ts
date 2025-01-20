@@ -1,100 +1,91 @@
-import { erc20Abi } from "viem";
-import { VexchangeV2FactoryABI } from "@abi/VexchangeV2Factory";
-import { VexchangeV2PairABI } from "@abi/VexchangeV2Pair";
+import { GenericFactoryABI } from "@abi/GenericFactory";
+import { ReservoirPairABI } from "@abi/ReservoirPair";
+import { ConstantProductPairABI } from "@abi/ConstantProductPair";
 import { IPair, IPairs } from "@interfaces/pair";
 import { IToken, ITokens } from "@interfaces/token";
-import { forwardRef, Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Interval } from "@nestjs/schedule";
 import { CoinGeckoService } from "@services/coin-gecko.service";
 import { Mutex } from "async-mutex";
-import { Address, parseUnits, getAddress, formatEther, http, createPublicClient, PublicClient } from "viem";
-import { find, times } from "lodash";
-import { FACTORY_ADDRESS, WVET } from "vexchange-sdk";
+import {
+    erc20Abi,
+    formatUnits,
+    Address,
+    getAddress,
+    formatEther,
+    http,
+    createPublicClient,
+    PublicClient,
+} from "viem";
+import { times } from "lodash";
+import { CONTRACTS, INTERVALS } from "@src/constants";
+import { avalanche } from "viem/chains";
 
 @Injectable()
 export class OnchainDataService implements OnModuleInit {
     private pairs: IPairs = {};
     private tokens: ITokens = {};
     private readonly mutex: Mutex = new Mutex();
-    private readonly httpTransport = http('https://mainnet.veblocks.net');
+    private readonly httpTransport = http(avalanche.rpcUrls.default.http[0]);
     private publicClient: PublicClient = createPublicClient({
         transport: this.httpTransport,
+        chain: avalanche,
     });
-
     private readonly logger: Logger = new Logger(OnchainDataService.name, { timestamp: true });
 
     public constructor(
-        @Inject(forwardRef(() => CoinGeckoService))
+        @Inject(CoinGeckoService)
         private readonly coingeckoService: CoinGeckoService,
         private readonly configService: ConfigService,
     ) {}
 
-    @Interval(60000)
+    @Interval(INTERVALS.FETCH_DATA)
     private async fetch(): Promise<void> {
-        const factoryContract = {
-            address: FACTORY_ADDRESS as `0x${string}`,
-            abi: VexchangeV2FactoryABI,
-        };
+        const factoryContract = this.getContract(CONTRACTS.FACTORY_ADDRESS, GenericFactoryABI);
 
-        const numPairs = await this.publicClient.readContract({
+        const allPairs: Address[] = await this.publicClient.readContract({
             ...factoryContract,
-            functionName: 'allPairsLength',
+            functionName: 'allPairs',
+            args: []
+        }) as Address[];
+        const numPairs = allPairs.length;
+        const pairCalls = this.generatePairCalls(allPairs)
+        const pairResults = await this.publicClient.multicall({
+            contracts: pairCalls,
         });
 
-        const promises: Promise<void>[] = times(Number(numPairs), async(i: number) => {
-            const pairAddress = await this.publicClient.readContract({
-                ...factoryContract,
-                functionName: 'allPairs',
-                args: [BigInt(i)],
-            }) as Address;
+        const promises = times(numPairs, async (i: number) => {
+            const pairAddress = allPairs[i];
+            const baseIndex = i * 8;
 
-            const pairContract = {
-                address: pairAddress,
-                abi: VexchangeV2PairABI,
-            };
-
-            const [token0Address, token1Address, swapFee, platformFee, reserves] = await Promise.all([
-                this.publicClient.readContract({
-                    ...pairContract,
-                    functionName: 'token0',
-                }),
-                this.publicClient.readContract({
-                    ...pairContract,
-                    functionName: 'token1',
-                }),
-                this.publicClient.readContract({
-                    ...pairContract,
-                    functionName: 'swapFee',
-                }),
-                this.publicClient.readContract({
-                    ...pairContract,
-                    functionName: 'platformFee',
-                }),
-                this.publicClient.readContract({
-                    ...pairContract,
-                    functionName: 'getReserves',
-                }),
-            ]);
+            const [token0Address, token1Address, swapFee, platformFee, reserves, token0Managed, token1Managed, accuracy] = [
+                pairResults[baseIndex].result,
+                pairResults[baseIndex + 1].result,
+                pairResults[baseIndex + 2].result,
+                pairResults[baseIndex + 3].result,
+                pairResults[baseIndex + 4].result,
+                pairResults[baseIndex + 5].result,
+                pairResults[baseIndex + 6].result,
+                pairResults[baseIndex + 7].result,
+            ];
 
             const [token0, token1] = await this.mutex.runExclusive(() => {
                 return Promise.all([
-                    this.fetchToken(getAddress(token0Address)),
-                    this.fetchToken(getAddress(token1Address)),
+                    this.fetchToken(getAddress(token0Address as Address)),
+                    this.fetchToken(getAddress(token1Address as Address)),
                 ]);
             });
 
-            const { reserve0, reserve1 } = reserves as { reserve0: bigint, reserve1: bigint };
+            const [reserve0, reserve1] = reserves as [bigint, bigint, bigint, bigint];
 
-            const reserve0BN: bigint = parseUnits(reserve0.toString(), token0.decimals);
-            const reserve1BN: bigint = parseUnits(reserve1.toString(), token1.decimals);
-
-            const price: bigint = (reserve0BN === 0n || reserve1BN === 0n)
+            const price: bigint = (reserve0 === 0n || reserve1 === 0n)
                 ? 0n
-                : reserve0BN * 10n ** 18n / reserve1BN;
+                : reserve0 * 10n ** 18n / reserve1;
 
-            const blockNumber = await this.publicClient.getBlockNumber();
-            const fromBlock = blockNumber - BigInt(8640);
+            const toBlock = await this.publicClient.getBlockNumber();
+            const fromBlock = toBlock - 2040n
+              // - BigInt(INTERVALS.BLOCK_RANGE); // block limit is 2048 blocks. TODO: paginate the queries until we get 24h worth of logs.
 
             const swapLogs = await this.publicClient.getLogs({
                 address: pairAddress,
@@ -103,15 +94,14 @@ export class OnchainDataService implements OnModuleInit {
                     name: 'Swap',
                     inputs: [
                         { type: 'address', name: 'sender', indexed: true },
-                        { type: 'uint256', name: 'amount0In' },
-                        { type: 'uint256', name: 'amount1In' },
-                        { type: 'uint256', name: 'amount0Out' },
-                        { type: 'uint256', name: 'amount1Out' },
+                        { type: 'bool', name: 'zeroForOne' },
+                        { type: 'uint256', name: 'amountIn' },
+                        { type: 'uint256', name: 'amountOut' },
                         { type: 'address', name: 'to', indexed: true }
                     ],
                 },
                 fromBlock,
-                toBlock: blockNumber,
+                toBlock,
             });
 
             let accToken0Volume: bigint = 0n;
@@ -120,100 +110,107 @@ export class OnchainDataService implements OnModuleInit {
             for (const log of swapLogs) {
                 const { args } = log;
                 if (args) {
-                    accToken0Volume = accToken0Volume +
-                        (args.amount0In as bigint) + (args.amount0Out as bigint);
-                    accToken1Volume = accToken1Volume +
-                        (args.amount1In as bigint) + (args.amount1Out as bigint);
+                    if (args.amountIn !== undefined && args.amountOut !== undefined) {
+                        accToken0Volume += args.zeroForOne ? BigInt(args.amountIn) : BigInt(args.amountOut);
+                        accToken1Volume += args.zeroForOne ? BigInt(args.amountOut) : BigInt(args.amountIn);
+                    }
                 }
             }
 
             this.pairs[pairAddress] = {
                 address: pairAddress,
+                curveId: accuracy === undefined ? 1 : 0, // only ConstantProductPair has this public variable named accuracy
                 token0,
                 token1,
                 price: formatEther(price),
-                swapFee: `${(Number(swapFee) / 100)}%`,
-                platformFee: `${(Number(platformFee) / 100)}%`,
-                token0Reserve: formatEther(parseUnits(reserve0.toString(), 18 - token0.decimals)),
-                token1Reserve: formatEther(parseUnits(reserve1.toString(), 18 - token1.decimals)),
-                token0Volume: formatEther(parseUnits(accToken0Volume.toString(), 18 - token0.decimals)),
-                token1Volume: formatEther(parseUnits(accToken1Volume.toString(), 18 - token1.decimals)),
+                swapFee: `${(Number(swapFee) / 10000)}%`,
+                platformFee: `${(Number(platformFee) / 10000)}%`,
+                token0Reserve: formatUnits(reserve0, token0.decimals),
+                token1Reserve: formatUnits(reserve1, token1.decimals),
+                token0Volume: formatUnits(accToken0Volume, token0.decimals),
+                token1Volume: formatUnits(accToken1Volume, token1.decimals),
+                token0Managed: formatUnits(token0Managed as bigint, token0.decimals),
+                token1Managed: formatUnits(token1Managed as bigint, token1.decimals),
+                swapApr: 0,
             };
         });
 
         await Promise.all(promises);
-        this.calculateUsdPrices();
-        this.filterMissingUsdTokens();
     }
 
-    private async fetchToken(address: Address): Promise<IToken>
-    {
+    private getContract(address: Address, abi: any) {
+        return { address, abi };
+    }
+
+    private generatePairCalls(pairs: Address[]) {
+        return pairs.flatMap((pairAddress) => [
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'token0',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'token1',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'swapFee',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'platformFee',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'getReserves',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'token0Managed',
+            },
+            {
+                ...this.getContract(pairAddress, ReservoirPairABI),
+                functionName: 'token1Managed',
+            },
+            {
+                ...this.getContract(pairAddress, ConstantProductPairABI),
+                functionName: 'ACCURACY'
+            }
+        ]);
+    }
+
+    private async fetchToken(address: Address): Promise<IToken> {
         if (address in this.tokens) return this.tokens[address];
 
-        const contract = {
-            abi: erc20Abi,
-            address: address as `0x${string}`,
-        };
+        const tokenCalls = [
+            {
+                ...this.getContract(address, erc20Abi),
+                functionName: 'symbol',
+            },
+            {
+                ...this.getContract(address, erc20Abi),
+                functionName: 'name',
+            },
+            {
+                ...this.getContract(address, erc20Abi),
+                functionName: 'decimals',
+            },
+        ];
 
-        const symbol: string = await this.publicClient.readContract({
-            ...contract,
-            functionName: 'symbol',
-        });
-
-        const name: string = await this.publicClient.readContract({
-            ...contract,
-            functionName: 'name',
-        });
-
-        const decimals: number = await this.publicClient.readContract({
-            ...contract,
-            functionName: 'decimals',
+        const [symbolResult, nameResult, decimalsResult] = await this.publicClient.multicall({
+            contracts: tokenCalls,
         });
 
         const token: IToken = {
-            name,
-            symbol,
+            name: nameResult.result as string,
+            symbol: symbolResult.result as string,
             contractAddress: address,
-            usdPrice: undefined,
-            decimals,
+            usdPrice: await this.coingeckoService.getCoinPrice(symbolResult.result as string),
+            decimals: decimalsResult.result as number,
         };
 
         this.tokens[address] = token;
         return token;
-    }
-
-    private calculateUsdPrices(): void
-    {
-        this.tokens[WVET["1"].address].usdPrice = this.coingeckoService.getVetPrice();
-        for (const pairAddress in this.pairs)
-        {
-            const pair: IPair = this.pairs[pairAddress];
-            if (pair.token0.symbol !== "WVET" && pair.token1.symbol !== "WVET")
-            {
-                continue;
-            }
-            else if (pair.token0.symbol === "WVET")
-            {
-                this.tokens[pair.token1.contractAddress].usdPrice =
-                  this.coingeckoService.getVetPrice() * parseFloat(pair.price);
-            }
-            else if (pair.token1.symbol === "WVET")
-            {
-                this.tokens[pair.token0.contractAddress].usdPrice =
-                  this.coingeckoService.getVetPrice() / parseFloat(pair.price);
-            }
-        }
-    }
-
-    private filterMissingUsdTokens(): void
-    {
-        for (const tokenAddress in this.tokens)
-        {
-            if (this.tokens[tokenAddress].usdPrice === undefined)
-            {
-                delete this.tokens[tokenAddress];
-            }
-        }
     }
 
     public async onModuleInit(): Promise<void> {

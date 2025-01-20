@@ -1,4 +1,4 @@
-# Vexchange API
+# Reservoir Finance REST API
   
 ## Description
 The readonly API for Reservoir Finance, simply efficient DeFi on arbitrum.
@@ -88,4 +88,4 @@ USD data (VET USD price) provided by [CoinGecko API](https://www.coingecko.com/e
 
 ## Attribution
 
-Powered by [Nestjs](https://github.com/nestjs/nest)
+Powered by [Nestjs](https://github.com/nestjs/nest) and [CoingeckoAPI](https://www.coingecko.com/en/api/)

@@ -3,6 +3,7 @@ import { IPair, IPairs } from "@interfaces/pair";
 export const allPairs: IPairs = {
     "0x2b6fc877ff5535b50f6c3e068bb436b16ec76fc5": {
         address: "0x2b6fc877ff5535b50f6c3e068bb436b16ec76fc5",
+        curveId: 0,
         token0: {
             name: "VeThor",
             symbol: "VTHO",
@@ -24,11 +25,14 @@ export const allPairs: IPairs = {
         token1Reserve: "5456454",
         token0Volume: "4665940.498116731766938627",
         token1Volume: "336487.684316643656557238",
+        token0Managed: "1.0",
+        token1Managed: "1.0",
     },
 };
 
 export const pair: IPair = {
     address: "0x2b6fc877ff5535b50f6c3e068bb436b16ec76fc5",
+    curveId: 0,
     token0: {
         name: "VeThor",
         symbol: "VTHO",
@@ -50,4 +54,6 @@ export const pair: IPair = {
     token1Reserve: "3301120.054632464973851585",
     token0Volume: "8542303.782305247881428819",
     token1Volume: "619979.933041357218919542",
+    token0Managed: "1.0",
+    token1Managed: "1.0",
 };
