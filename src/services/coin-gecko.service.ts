@@ -62,7 +62,7 @@ export class CoinGeckoService implements OnModuleInit
             return data[tokenId].usd;
         } catch (error) {
             this.logger.error(`Failed to fetch price for ${tokenId}: ${error}`);
-            throw error;
+            return 0;
         }
     }
 
@@ -84,7 +84,6 @@ export class CoinGeckoService implements OnModuleInit
             };
         } catch (error) {
             this.logger.error(`Failed to fetch ${symbol}: ${error}`);
-            throw error;
         }
     }
 
