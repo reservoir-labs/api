@@ -1,4 +1,4 @@
-app = 'api-uoc4wg'
+app = 'api-data'
 primary_region = 'sin'
 
 [build]
