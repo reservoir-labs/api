@@ -214,7 +214,7 @@ export class OnchainDataService implements OnModuleInit {
     }
 
     public async onModuleInit(): Promise<void> {
-        this.logger.log("Fetching on chain data...");
+        this.logger.log("Fetching on chain data... ");
         await this.fetch();
         this.logger.log("Fetching on chain data completed");
     }

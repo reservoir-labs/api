@@ -1,12 +1,12 @@
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { IVault, IVaults } from "@interfaces/vault";
 import { Interval } from "@nestjs/schedule";
 import { INTERVALS } from "@src/constants";
 
-
 @Injectable()
 export class VaultService implements OnModuleInit {
     private vaults: IVaults = { };
+    private readonly logger: Logger = new Logger(VaultService.name, { timestamp: true });
 
     private list = [
       'https://yields.llama.fi/chart/af2343d4-1265-47b1-babf-bfbca90dab56'
@@ -25,8 +25,9 @@ export class VaultService implements OnModuleInit {
 
 
     public onModuleInit(): void {
+        this.logger.log("Fetching vaults data");
         this.fetchVaults();
-        console.log("OnchainDataService initialized");
+        this.logger.log("Fetching vaults data completed");
     }
 
     public getAllVaults(): IVaults {
