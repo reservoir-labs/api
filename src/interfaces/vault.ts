@@ -2,8 +2,10 @@ import { Address } from "viem";
 
 export interface IVault {
   address: Address;
-  supplyAPR: number;
-  TVL: string;
+  apy: number;
+  apyBase: number;
+  apyReward: number;
+  TVL: number;
   underlyingAsset: Address;
   defillamaQueryUrl: string;
 }

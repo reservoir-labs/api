@@ -15,6 +15,7 @@ export const API_ENDPOINT = {
 export const INTERVALS = {
   FETCH_DATA: 300000 as const, // 5 minutes
   BLOCK_RANGE: 8640 as const, // Number of blocks to look back
+  FETCH_VAULT_DATA: 43200000 // 12 hours as data only refreshes every 24h
 } as const;
 
 export const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds

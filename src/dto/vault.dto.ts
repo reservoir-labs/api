@@ -9,17 +9,29 @@ export class VaultDto implements IVault {
   })
   address!: Address;
 
-  @ApiProperty({
-    description: 'APR for supplying liquidity',
-    example: 0.1
-  })
-  supplyAPR!: number;
+@ApiProperty({
+    description: 'Annual Percentage Yield',
+    example: 12.34
+})
+apy!: number;
+
+@ApiProperty({
+    description: 'Base Annual Percentage Yield',
+    example: 10.00
+})
+apyBase!: number;
+
+@ApiProperty({
+    description: 'Reward Annual Percentage Yield',
+    example: 2.34
+})
+apyReward!: number;
 
   @ApiProperty({
     description: 'Total Value Locked',
     example: '5456454'
   })
-  TVL!: string;
+  TVL!: number;
 
   @ApiProperty({
     description: 'Underlying asset address',
