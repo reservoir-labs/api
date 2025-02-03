@@ -1,352 +1,352 @@
 export const GenericFactoryABI = [
         {
-            "type": "function",
-            "name": "_curves",
-            "inputs": [
+            'type': 'function',
+            'name': '_curves',
+            'inputs': [
                 {
-                    "name": "",
-                    "type": "uint256",
-                    "internalType": "uint256"
+                    'name': '',
+                    'type': 'uint256',
+                    'internalType': 'uint256'
                 }
             ],
-            "outputs": [
+            'outputs': [
                 {
-                    "name": "",
-                    "type": "bytes32",
-                    "internalType": "bytes32"
+                    'name': '',
+                    'type': 'bytes32',
+                    'internalType': 'bytes32'
                 }
             ],
-            "stateMutability": "view"
+            'stateMutability': 'view'
         },
         {
-            "type": "function",
-            "name": "addCurve",
-            "inputs": [
+            'type': 'function',
+            'name': 'addCurve',
+            'inputs': [
                 {
-                    "name": "aInitCode",
-                    "type": "bytes",
-                    "internalType": "bytes"
+                    'name': 'aInitCode',
+                    'type': 'bytes',
+                    'internalType': 'bytes'
                 }
             ],
-            "outputs": [
+            'outputs': [
                 {
-                    "name": "rCurveId",
-                    "type": "uint256",
-                    "internalType": "uint256"
+                    'name': 'rCurveId',
+                    'type': 'uint256',
+                    'internalType': 'uint256'
                 },
                 {
-                    "name": "rCodeKey",
-                    "type": "bytes32",
-                    "internalType": "bytes32"
+                    'name': 'rCodeKey',
+                    'type': 'bytes32',
+                    'internalType': 'bytes32'
                 }
             ],
-            "stateMutability": "nonpayable"
+            'stateMutability': 'nonpayable'
         },
         {
-            "type": "function",
-            "name": "allPairs",
-            "inputs": [],
-            "outputs": [
+            'type': 'function',
+            'name': 'allPairs',
+            'inputs': [],
+            'outputs': [
                 {
-                    "name": "",
-                    "type": "address[]",
-                    "internalType": "address[]"
+                    'name': '',
+                    'type': 'address[]',
+                    'internalType': 'address[]'
                 }
             ],
-            "stateMutability": "view"
+            'stateMutability': 'view'
         },
         {
-            "type": "function",
-            "name": "createPair",
-            "inputs": [
+            'type': 'function',
+            'name': 'createPair',
+            'inputs': [
                 {
-                    "name": "aTokenA",
-                    "type": "address",
-                    "internalType": "contract IERC20"
+                    'name': 'aTokenA',
+                    'type': 'address',
+                    'internalType': 'contract IERC20'
                 },
                 {
-                    "name": "aTokenB",
-                    "type": "address",
-                    "internalType": "contract IERC20"
+                    'name': 'aTokenB',
+                    'type': 'address',
+                    'internalType': 'contract IERC20'
                 },
                 {
-                    "name": "aCurveId",
-                    "type": "uint256",
-                    "internalType": "uint256"
+                    'name': 'aCurveId',
+                    'type': 'uint256',
+                    'internalType': 'uint256'
                 }
             ],
-            "outputs": [
+            'outputs': [
                 {
-                    "name": "rPair",
-                    "type": "address",
-                    "internalType": "address"
+                    'name': 'rPair',
+                    'type': 'address',
+                    'internalType': 'address'
                 }
             ],
-            "stateMutability": "nonpayable"
+            'stateMutability': 'nonpayable'
         },
         {
-            "type": "function",
-            "name": "curves",
-            "inputs": [],
-            "outputs": [
+            'type': 'function',
+            'name': 'curves',
+            'inputs': [],
+            'outputs': [
                 {
-                    "name": "",
-                    "type": "bytes32[]",
-                    "internalType": "bytes32[]"
+                    'name': '',
+                    'type': 'bytes32[]',
+                    'internalType': 'bytes32[]'
                 }
             ],
-            "stateMutability": "view"
+            'stateMutability': 'view'
         },
         {
-            "type": "function",
-            "name": "get",
-            "inputs": [
+            'type': 'function',
+            'name': 'get',
+            'inputs': [
                 {
-                    "name": "",
-                    "type": "bytes32",
-                    "internalType": "bytes32"
+                    'name': '',
+                    'type': 'bytes32',
+                    'internalType': 'bytes32'
                 }
             ],
-            "outputs": [
+            'outputs': [
                 {
-                    "name": "",
-                    "type": "bytes32",
-                    "internalType": "bytes32"
+                    'name': '',
+                    'type': 'bytes32',
+                    'internalType': 'bytes32'
                 }
             ],
-            "stateMutability": "view"
+            'stateMutability': 'view'
         },
         {
-            "type": "function",
-            "name": "getBytecode",
-            "inputs": [
+            'type': 'function',
+            'name': 'getBytecode',
+            'inputs': [
                 {
-                    "name": "aCodeKey",
-                    "type": "bytes32",
-                    "internalType": "bytes32"
+                    'name': 'aCodeKey',
+                    'type': 'bytes32',
+                    'internalType': 'bytes32'
                 },
                 {
-                    "name": "aToken0",
-                    "type": "address",
-                    "internalType": "contract IERC20"
+                    'name': 'aToken0',
+                    'type': 'address',
+                    'internalType': 'contract IERC20'
                 },
                 {
-                    "name": "aToken1",
-                    "type": "address",
-                    "internalType": "contract IERC20"
+                    'name': 'aToken1',
+                    'type': 'address',
+                    'internalType': 'contract IERC20'
                 }
             ],
-            "outputs": [
+            'outputs': [
                 {
-                    "name": "",
-                    "type": "bytes",
-                    "internalType": "bytes"
+                    'name': '',
+                    'type': 'bytes',
+                    'internalType': 'bytes'
                 }
             ],
-            "stateMutability": "view"
+            'stateMutability': 'view'
         },
         {
-            "type": "function",
-            "name": "getPair",
-            "inputs": [
+            'type': 'function',
+            'name': 'getPair',
+            'inputs': [
                 {
-                    "name": "",
-                    "type": "address",
-                    "internalType": "contract IERC20"
+                    'name': '',
+                    'type': 'address',
+                    'internalType': 'contract IERC20'
                 },
                 {
-                    "name": "",
-                    "type": "address",
-                    "internalType": "contract IERC20"
+                    'name': '',
+                    'type': 'address',
+                    'internalType': 'contract IERC20'
                 },
                 {
-                    "name": "",
-                    "type": "uint256",
-                    "internalType": "uint256"
+                    'name': '',
+                    'type': 'uint256',
+                    'internalType': 'uint256'
                 }
             ],
-            "outputs": [
+            'outputs': [
                 {
-                    "name": "",
-                    "type": "address",
-                    "internalType": "address"
+                    'name': '',
+                    'type': 'address',
+                    'internalType': 'address'
                 }
             ],
-            "stateMutability": "view"
+            'stateMutability': 'view'
         },
         {
-            "type": "function",
-            "name": "owner",
-            "inputs": [],
-            "outputs": [
+            'type': 'function',
+            'name': 'owner',
+            'inputs': [],
+            'outputs': [
                 {
-                    "name": "",
-                    "type": "address",
-                    "internalType": "address"
+                    'name': '',
+                    'type': 'address',
+                    'internalType': 'address'
                 }
             ],
-            "stateMutability": "view"
+            'stateMutability': 'view'
         },
         {
-            "type": "function",
-            "name": "rawCall",
-            "inputs": [
+            'type': 'function',
+            'name': 'rawCall',
+            'inputs': [
                 {
-                    "name": "aTarget",
-                    "type": "address",
-                    "internalType": "address"
+                    'name': 'aTarget',
+                    'type': 'address',
+                    'internalType': 'address'
                 },
                 {
-                    "name": "aCalldata",
-                    "type": "bytes",
-                    "internalType": "bytes"
+                    'name': 'aCalldata',
+                    'type': 'bytes',
+                    'internalType': 'bytes'
                 },
                 {
-                    "name": "aValue",
-                    "type": "uint256",
-                    "internalType": "uint256"
+                    'name': 'aValue',
+                    'type': 'uint256',
+                    'internalType': 'uint256'
                 }
             ],
-            "outputs": [
+            'outputs': [
                 {
-                    "name": "",
-                    "type": "bytes",
-                    "internalType": "bytes"
+                    'name': '',
+                    'type': 'bytes',
+                    'internalType': 'bytes'
                 }
             ],
-            "stateMutability": "nonpayable"
+            'stateMutability': 'nonpayable'
         },
         {
-            "type": "function",
-            "name": "set",
-            "inputs": [
+            'type': 'function',
+            'name': 'set',
+            'inputs': [
                 {
-                    "name": "aKey",
-                    "type": "bytes32",
-                    "internalType": "bytes32"
+                    'name': 'aKey',
+                    'type': 'bytes32',
+                    'internalType': 'bytes32'
                 },
                 {
-                    "name": "aValue",
-                    "type": "bytes32",
-                    "internalType": "bytes32"
+                    'name': 'aValue',
+                    'type': 'bytes32',
+                    'internalType': 'bytes32'
                 }
             ],
-            "outputs": [],
-            "stateMutability": "nonpayable"
+            'outputs': [],
+            'stateMutability': 'nonpayable'
         },
         {
-            "type": "function",
-            "name": "transferOwnership",
-            "inputs": [
+            'type': 'function',
+            'name': 'transferOwnership',
+            'inputs': [
                 {
-                    "name": "newOwner",
-                    "type": "address",
-                    "internalType": "address"
+                    'name': 'newOwner',
+                    'type': 'address',
+                    'internalType': 'address'
                 }
             ],
-            "outputs": [],
-            "stateMutability": "nonpayable"
+            'outputs': [],
+            'stateMutability': 'nonpayable'
         },
         {
-            "type": "event",
-            "name": "OwnershipTransferred",
-            "inputs": [
+            'type': 'event',
+            'name': 'OwnershipTransferred',
+            'inputs': [
                 {
-                    "name": "user",
-                    "type": "address",
-                    "indexed": true,
-                    "internalType": "address"
+                    'name': 'user',
+                    'type': 'address',
+                    'indexed': true,
+                    'internalType': 'address'
                 },
                 {
-                    "name": "newOwner",
-                    "type": "address",
-                    "indexed": true,
-                    "internalType": "address"
+                    'name': 'newOwner',
+                    'type': 'address',
+                    'indexed': true,
+                    'internalType': 'address'
                 }
             ],
-            "anonymous": false
+            'anonymous': false
         },
         {
-            "type": "event",
-            "name": "Pair",
-            "inputs": [
+            'type': 'event',
+            'name': 'Pair',
+            'inputs': [
                 {
-                    "name": "token0",
-                    "type": "address",
-                    "indexed": true,
-                    "internalType": "contract IERC20"
+                    'name': 'token0',
+                    'type': 'address',
+                    'indexed': true,
+                    'internalType': 'contract IERC20'
                 },
                 {
-                    "name": "token1",
-                    "type": "address",
-                    "indexed": true,
-                    "internalType": "contract IERC20"
+                    'name': 'token1',
+                    'type': 'address',
+                    'indexed': true,
+                    'internalType': 'contract IERC20'
                 },
                 {
-                    "name": "curveId",
-                    "type": "uint256",
-                    "indexed": false,
-                    "internalType": "uint256"
+                    'name': 'curveId',
+                    'type': 'uint256',
+                    'indexed': false,
+                    'internalType': 'uint256'
                 },
                 {
-                    "name": "pair",
-                    "type": "address",
-                    "indexed": false,
-                    "internalType": "address"
+                    'name': 'pair',
+                    'type': 'address',
+                    'indexed': false,
+                    'internalType': 'address'
                 }
             ],
-            "anonymous": false
+            'anonymous': false
         },
         {
-            "type": "error",
-            "name": "AddressEmptyCode",
-            "inputs": [
+            'type': 'error',
+            'name': 'AddressEmptyCode',
+            'inputs': [
                 {
-                    "name": "target",
-                    "type": "address",
-                    "internalType": "address"
+                    'name': 'target',
+                    'type': 'address',
+                    'internalType': 'address'
                 }
             ]
         },
         {
-            "type": "error",
-            "name": "DeployFailed",
-            "inputs": []
+            'type': 'error',
+            'name': 'DeployFailed',
+            'inputs': []
         },
         {
-            "type": "error",
-            "name": "FailedCall",
-            "inputs": []
+            'type': 'error',
+            'name': 'FailedCall',
+            'inputs': []
         },
         {
-            "type": "error",
-            "name": "IdenticalAddresses",
-            "inputs": []
+            'type': 'error',
+            'name': 'IdenticalAddresses',
+            'inputs': []
         },
         {
-            "type": "error",
-            "name": "InsufficientBalance",
-            "inputs": [
+            'type': 'error',
+            'name': 'InsufficientBalance',
+            'inputs': [
                 {
-                    "name": "balance",
-                    "type": "uint256",
-                    "internalType": "uint256"
+                    'name': 'balance',
+                    'type': 'uint256',
+                    'internalType': 'uint256'
                 },
                 {
-                    "name": "needed",
-                    "type": "uint256",
-                    "internalType": "uint256"
+                    'name': 'needed',
+                    'type': 'uint256',
+                    'internalType': 'uint256'
                 }
             ]
         },
         {
-            "type": "error",
-            "name": "PairExists",
-            "inputs": []
+            'type': 'error',
+            'name': 'PairExists',
+            'inputs': []
         },
         {
-            "type": "error",
-            "name": "ZeroAddress",
-            "inputs": []
+            'type': 'error',
+            'name': 'ZeroAddress',
+            'inputs': []
         }
     ];
