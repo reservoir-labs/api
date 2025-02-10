@@ -145,8 +145,6 @@ export class OnchainDataService implements OnModuleInit {
         if (curveId === 0) {
             const normalizedReserve0 = reserve0 * 10n ** BigInt(18 - token0Decimal);
             const normalizedReserve1 = reserve1 * 10n ** BigInt(18 - token1Decimal);
-            console.log(normalizedReserve0)
-            console.log(normalizedReserve1)
             return normalizedReserve1 * WAD / normalizedReserve0;
         }
         else if (curveId === 1 && ampCoefficientPrecise) {
