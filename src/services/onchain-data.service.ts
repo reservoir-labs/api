@@ -1,6 +1,6 @@
 import { GenericFactoryABI } from "@abi/GenericFactory";
 import { ReservoirPairABI } from "@abi/ReservoirPair";
-import { ConstantProductPairABI } from "@abi/ConstantProductPair";
+import { StablePairABI } from "@abi/StablePair";
 import { IPair, IPairs } from "@interfaces/pair";
 import { IToken, ITokens } from "@interfaces/token";
 import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
@@ -16,11 +16,12 @@ import {
     formatEther,
     http,
     createPublicClient,
-    PublicClient,
+    PublicClient, parseUnits
 } from "viem";
 import { times } from "lodash";
-import { CONTRACTS, INTERVALS } from "@src/constants";
+import { CONTRACTS, INTERVALS, WAD } from "@src/constants";
 import { arbitrum } from "viem/chains";
+import { calculateStableSpotPrice } from "@reservoir-labs/sdk";
 
 @Injectable()
 export class OnchainDataService implements OnModuleInit {
@@ -59,7 +60,7 @@ export class OnchainDataService implements OnModuleInit {
             const pairAddress = allPairs[i];
             const baseIndex = i * 8;
 
-            const [token0Address, token1Address, swapFee, platformFee, reserves, token0Managed, token1Managed, accuracy] = [
+            const [token0Address, token1Address, swapFee, platformFee, reserves, token0Managed, token1Managed, currentAPrecise] = [
                 pairResults[baseIndex].result,
                 pairResults[baseIndex + 1].result,
                 pairResults[baseIndex + 2].result,
@@ -69,6 +70,7 @@ export class OnchainDataService implements OnModuleInit {
                 pairResults[baseIndex + 6].result,
                 pairResults[baseIndex + 7].result,
             ];
+            const curveId: number = currentAPrecise ? 1 : 0;
 
             const [token0, token1] = await this.mutex.runExclusive(() => {
                 return Promise.all([
@@ -79,9 +81,7 @@ export class OnchainDataService implements OnModuleInit {
 
             const [reserve0, reserve1] = reserves as [bigint, bigint, bigint, bigint];
 
-            const price: bigint = (reserve0 === 0n || reserve1 === 0n)
-                ? 0n
-                : reserve0 * 10n ** 18n / reserve1;
+            const price: bigint = this.calcSpotPrice(reserve0, reserve1, token0.decimals, token1.decimals, curveId, currentAPrecise as number);
 
             const toBlock = await this.publicClient.getBlockNumber();
             const fromBlock = toBlock - 2040n
@@ -119,7 +119,7 @@ export class OnchainDataService implements OnModuleInit {
 
             this.pairs[pairAddress] = {
                 address: pairAddress,
-                curveId: accuracy === undefined ? 1 : 0, // only ConstantProductPair has this public variable named accuracy
+                curveId,
                 token0,
                 token1,
                 price: formatEther(price),
@@ -136,6 +136,25 @@ export class OnchainDataService implements OnModuleInit {
         });
 
         await Promise.all(promises);
+    }
+
+    private calcSpotPrice(reserve0: bigint, reserve1: bigint, token0Decimal: number, token1Decimal: number, curveId: number, ampCoefficientPrecise?: number): bigint {
+        if (reserve0 === 0n || reserve1 === 0n) return 0n;
+
+        // constant product
+        if (curveId === 0) {
+            const normalizedReserve0 = reserve0 * 10n ** BigInt(18 - token0Decimal);
+            const normalizedReserve1 = reserve1 * 10n ** BigInt(18 - token1Decimal);
+            console.log(normalizedReserve0)
+            console.log(normalizedReserve1)
+            return normalizedReserve1 * WAD / normalizedReserve0;
+        }
+        else if (curveId === 1 && ampCoefficientPrecise) {
+            const result = calculateStableSpotPrice(formatUnits(reserve0, token0Decimal), formatUnits(reserve1, token1Decimal), ampCoefficientPrecise);
+            return BigInt(parseUnits(result.toString(), 18))
+        } else {
+            throw new Error(`Unknown curve type ${curveId}`);
+        }
     }
 
     private getContract(address: Address, abi: any) {
@@ -173,8 +192,8 @@ export class OnchainDataService implements OnModuleInit {
                 functionName: 'token1Managed',
             },
             {
-                ...this.getContract(pairAddress, ConstantProductPairABI),
-                functionName: 'ACCURACY'
+                ...this.getContract(pairAddress, StablePairABI),
+                functionName: 'getCurrentAPrecise',
             }
         ]);
     }

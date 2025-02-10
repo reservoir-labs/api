@@ -38,6 +38,7 @@
     "@nestjs/platform-fastify": "10.4.15",
     "@nestjs/schedule": "4.1.2",
     "@nestjs/swagger": "8.1.1",
+    "@reservoir-labs/sdk": "0.3.6",
     "async-mutex": "0.3.2",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",

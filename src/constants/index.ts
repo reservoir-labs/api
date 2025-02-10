@@ -13,3 +13,5 @@ export const INTERVALS = {
 } as const;
 
 export const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+export const WAD = 1_000_000_000_000_000_000n; // 1e18
