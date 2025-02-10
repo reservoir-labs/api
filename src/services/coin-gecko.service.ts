@@ -15,6 +15,7 @@ export class CoinGeckoService implements OnModuleInit
         'eth': 'ethereum',
         'weth': 'weth',
         'usdc': 'usd-coin',
+        'usd₮0': 'tether',
         'usdt': 'tether',
         'dai': 'dai',
         'wbtc': 'wrapped-bitcoin',
