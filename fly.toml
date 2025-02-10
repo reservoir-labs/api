@@ -1,12 +1,12 @@
 app = 'api-data'
-primary_region = 'sin'
+primary_region = 'sjc'
 
 [build]
 
 [http_service]
   internal_port = 80
   force_https = true
-  auto_stop_machines = 'suspend' # use suspend or off, but never stop, as stopped machines take a long time to get back up again
+  auto_stop_machines = 'off' # use suspend or off, but never stop, as stopped machines take a long time to get back up again
   auto_start_machines = true
   min_machines_running = 0
   processes = ['app']

@@ -15,11 +15,10 @@ export class CoinGeckoService implements OnModuleInit
         'eth': 'ethereum',
         'weth': 'weth',
         'usdc': 'usd-coin',
+        'usd₮0': 'usdt0',
         'usdt': 'tether',
         'dai': 'dai',
         'wbtc': 'wrapped-bitcoin',
-        'avax': 'avalanche-2',
-        'wavax': 'avalanche-2',
         'btc.b': 'bitcoin-avalanche-bridged-btc-b',
         'joe': 'joe'
     };
@@ -70,11 +69,12 @@ export class CoinGeckoService implements OnModuleInit
     {
         const cleanSymbol = this.stripDotE(symbol.toLowerCase());
         const tokenId = this.symbolToId[cleanSymbol];
-        if (!tokenId) {
-            throw new Error(`Unknown token symbol: ${symbol}`);
-        }
 
         try {
+            if (!tokenId) {
+                throw new Error(`Unknown token symbol: ${symbol}`);
+            }
+
             const usdPrice = await this.fetchPriceData(tokenId);
             this.tokens[symbol] = {
                 name: symbol,
@@ -103,6 +103,6 @@ export class CoinGeckoService implements OnModuleInit
             await this.fetch(symbol);
         }
 
-        return this.tokens[symbol].usdPrice;
+        return this.tokens[symbol]?.usdPrice ?? 0;
     }
 }

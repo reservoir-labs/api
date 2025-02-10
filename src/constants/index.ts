@@ -2,13 +2,8 @@
 
 // Contract Addresses
 export const CONTRACTS = {
-  FACTORY_ADDRESS: '0xDd723D9273642D82c5761a4467fD5265d94a22da' as const,
-  WETH: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7' as const,
-} as const;
-
-// API Endpoints
-export const API_ENDPOINT = {
-  RPC_URL: 'https://api.avax.network/ext/bc/C/rpc',
+  FACTORY_ADDRESS: '0x89d235b4a770cb09ee976df814266226a23a9315' as const,
+  WETH: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1' as const,
 } as const;
 
 // Time intervals (in ms)
@@ -18,3 +13,5 @@ export const INTERVALS = {
 } as const;
 
 export const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+export const WAD = 1_000_000_000_000_000_000n; // 1e18
