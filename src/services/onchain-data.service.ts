@@ -20,17 +20,17 @@ import {
 } from "viem";
 import { times } from "lodash";
 import { CONTRACTS, INTERVALS } from "@src/constants";
-import { avalanche } from "viem/chains";
+import { arbitrum } from "viem/chains";
 
 @Injectable()
 export class OnchainDataService implements OnModuleInit {
     private pairs: IPairs = {};
     private tokens: ITokens = {};
     private readonly mutex: Mutex = new Mutex();
-    private readonly httpTransport = http(avalanche.rpcUrls.default.http[0]);
+    private readonly httpTransport = http(arbitrum.rpcUrls.default.http[0]);
     private publicClient: PublicClient = createPublicClient({
         transport: this.httpTransport,
-        chain: avalanche,
+        chain: arbitrum,
     });
     private readonly logger: Logger = new Logger(OnchainDataService.name, { timestamp: true });
 
