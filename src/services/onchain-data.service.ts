@@ -20,7 +20,7 @@ import {
 } from "viem";
 import { times } from "lodash";
 import { CONTRACTS, INTERVALS, WAD } from "@src/constants";
-import { arbitrum } from "viem/chains";
+import { avalanche } from "viem/chains";
 import { calculateStableSpotPrice } from "@reservoir-labs/sdk";
 
 @Injectable()
@@ -28,10 +28,10 @@ export class OnchainDataService implements OnModuleInit {
     private pairs: IPairs = {};
     private tokens: ITokens = {};
     private readonly mutex: Mutex = new Mutex();
-    private readonly httpTransport = http(arbitrum.rpcUrls.default.http[0]);
+    private readonly httpTransport = http(avalanche.rpcUrls.default.http[0]);
     private publicClient: PublicClient = createPublicClient({
         transport: this.httpTransport,
-        chain: arbitrum,
+        chain: avalanche,
     });
     private readonly logger: Logger = new Logger(OnchainDataService.name, { timestamp: true });
 

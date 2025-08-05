@@ -1,7 +1,7 @@
 # Reservoir Finance REST API
   
 ## Description
-The readonly API for Reservoir Finance, simply efficient DeFi on arbitrum.
+The readonly API for Reservoir Finance, simply efficient DeFi on Avalanche.
 
 ## Installation
 The use of NVM (node version manager) is recommended.

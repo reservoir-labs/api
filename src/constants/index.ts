@@ -2,8 +2,8 @@
 
 // Contract Addresses
 export const CONTRACTS = {
-  FACTORY_ADDRESS: '0x89d235b4a770cb09ee976df814266226a23a9315' as const,
-  WETH: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1' as const,
+  FACTORY_ADDRESS: '0x1A49Bc8464731A08c16EdF17F33CF77db37228a4' as const,
+  WETH: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7' as const,
 } as const;
 
 // Time intervals (in ms)
