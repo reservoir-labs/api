@@ -126,6 +126,30 @@ export class OnchainDataService implements OnModuleInit {
                 }
             }
 
+            // Calculate swap APR
+            let swapAprValue = 0;
+            try {
+                const volumeToken0 = Number(formatUnits(accToken0Volume, token0.decimals));
+                const volumeToken1 = Number(formatUnits(accToken1Volume, token1.decimals));
+                const reserve0Float = Number(formatUnits(reserve0, token0.decimals));
+                const reserve1Float = Number(formatUnits(reserve1, token1.decimals));
+
+                const price0 = token0.usdPrice ?? 0;
+                const price1 = token1.usdPrice ?? 0;
+
+                const totalVolumeUsd = volumeToken0 * price0 + volumeToken1 * price1;
+                const feeRateDecimal = Number(swapFee) / 10_000; // swapFee is in basis points (1e4)
+                const dailyFeesUsd = totalVolumeUsd * feeRateDecimal / 2;
+
+                const tvlUsd = reserve0Float * price0 + reserve1Float * price1;
+
+                if (tvlUsd > 0) {
+                    swapAprValue = (dailyFeesUsd * 365 / tvlUsd) * 100;
+                }
+            } catch (error) {
+                this.logger.warn(`Failed to calculate swap APR for pair ${pairAddress}: ${error}`);
+            }
+
             this.pairs[pairAddress] = {
                 address: pairAddress,
                 curveId,
@@ -140,7 +164,7 @@ export class OnchainDataService implements OnModuleInit {
                 token1Volume: formatUnits(accToken1Volume, token1.decimals),
                 token0Managed: formatUnits(token0Managed as bigint, token0.decimals),
                 token1Managed: formatUnits(token1Managed as bigint, token1.decimals),
-                swapApr: 0,
+                swapApr: swapAprValue,
             };
         });
 
