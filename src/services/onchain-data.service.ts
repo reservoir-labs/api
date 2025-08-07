@@ -56,6 +56,10 @@ export class OnchainDataService implements OnModuleInit {
             contracts: pairCalls,
         });
 
+        // Determine the block range covering the past 24 hours
+        const latestBlock = await this.publicClient.getBlockNumber();
+        const fromBlock24h = await this.findBlock24hAgo(latestBlock);
+
         const promises = times(numPairs, async (i: number) => {
             const pairAddress = allPairs[i];
             const baseIndex = i * 8;
@@ -83,26 +87,31 @@ export class OnchainDataService implements OnModuleInit {
 
             const price: bigint = this.calcSpotPrice(reserve0, reserve1, token0.decimals, token1.decimals, curveId, currentAPrecise as number);
 
-            const toBlock = await this.publicClient.getBlockNumber();
-            const fromBlock = toBlock - 2040n
-              // - BigInt(INTERVALS.BLOCK_RANGE); // block limit is 2048 blocks. TODO: paginate the queries until we get 24h worth of logs.
+            const toBlock = latestBlock;
+            const fromBlock = fromBlock24h;
 
-            const swapLogs = await this.publicClient.getLogs({
-                address: pairAddress,
-                event: {
-                    type: 'event',
-                    name: 'Swap',
-                    inputs: [
-                        { type: 'address', name: 'sender', indexed: true },
-                        { type: 'bool', name: 'zeroForOne' },
-                        { type: 'uint256', name: 'amountIn' },
-                        { type: 'uint256', name: 'amountOut' },
-                        { type: 'address', name: 'to', indexed: true }
-                    ],
-                },
-                fromBlock,
-                toBlock,
-            });
+            // Fetch logs in 2 048-block chunks to avoid RPC limits
+            const swapLogs: any[] = [];
+            for (let start = fromBlock; start <= toBlock; start += 2048n) {
+                const end = start + 2047n > toBlock ? toBlock : start + 2047n;
+                const logs = await this.publicClient.getLogs({
+                    address: pairAddress,
+                    event: {
+                        type: 'event',
+                        name: 'Swap',
+                        inputs: [
+                            { type: 'address', name: 'sender', indexed: true },
+                            { type: 'bool', name: 'zeroForOne' },
+                            { type: 'uint256', name: 'amountIn' },
+                            { type: 'uint256', name: 'amountOut' },
+                            { type: 'address', name: 'to', indexed: true }
+                        ],
+                    },
+                    fromBlock: start,
+                    toBlock: end,
+                });
+                swapLogs.push(...logs);
+            }
 
             let accToken0Volume: bigint = 0n;
             let accToken1Volume: bigint = 0n;
@@ -254,5 +263,24 @@ export class OnchainDataService implements OnModuleInit {
     public getToken(tokenAddress: string): IToken | undefined
     {
         return this.tokens[tokenAddress];
+    }
+
+    // Binary-search to find the block whose timestamp is closest to (now - 24 h)
+    private async findBlock24hAgo(latestBlock: bigint): Promise<bigint> {
+        const targetTimestamp = Math.floor(Date.now() / 1000) - 24 * 60 * 60; // UNIX seconds
+        let low = 0n;
+        let high = latestBlock;
+        while (low < high) {
+            const mid = (low + high) / 2n;
+            const block = await this.publicClient.getBlock({ blockNumber: mid });
+            const blockTs = Number(block.timestamp);
+            if (blockTs > targetTimestamp) {
+                high = mid - 1n;
+            } else {
+                low = mid + 1n;
+            }
+        }
+        return low;
+
     }
 }
