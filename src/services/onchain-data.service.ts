@@ -89,7 +89,7 @@ export class OnchainDataService implements OnModuleInit {
 
             const toBlock = latestBlock;
             const fromBlock = fromBlock24h;
-
+        
             // Fetch logs in 2 048-block chunks to avoid RPC limits
             const swapLogs: any[] = [];
             for (let start = fromBlock; start <= toBlock; start += 2048n) {
@@ -268,7 +268,7 @@ export class OnchainDataService implements OnModuleInit {
     // Binary-search to find the block whose timestamp is closest to (now - 24 h)
     private async findBlock24hAgo(latestBlock: bigint): Promise<bigint> {
         const targetTimestamp = Math.floor(Date.now() / 1000) - 24 * 60 * 60; // UNIX seconds
-        let low = 0n;
+        let low = 66600000n;
         let high = latestBlock;
         while (low < high) {
             const mid = (low + high) / 2n;
