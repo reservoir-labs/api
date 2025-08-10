@@ -21,7 +21,7 @@ import {
 import { times } from "lodash";
 import { CONTRACTS, INTERVALS, WAD } from "@src/constants";
 import { avalanche } from "viem/chains";
-import { calculateStableSpotPrice } from "@reservoir-labs/sdk";
+import { calculateStableSpotPrice, FEE_ACCURACY } from "@reservoir-labs/sdk";
 
 @Injectable()
 export class OnchainDataService implements OnModuleInit {
@@ -89,8 +89,8 @@ export class OnchainDataService implements OnModuleInit {
 
             const toBlock = latestBlock;
             const fromBlock = fromBlock24h;
-        
-            // Fetch logs in 2 048-block chunks to avoid RPC limits
+
+            // Fetch logs in 2048-block chunks to avoid RPC limits
             const swapLogs: any[] = [];
             for (let start = fromBlock; start <= toBlock; start += 2048n) {
                 const end = start + 2047n > toBlock ? toBlock : start + 2047n;
@@ -138,7 +138,7 @@ export class OnchainDataService implements OnModuleInit {
                 const price1 = token1.usdPrice ?? 0;
 
                 const totalVolumeUsd = volumeToken0 * price0 + volumeToken1 * price1;
-                const feeRateDecimal = Number(swapFee) / 10_000; // swapFee is in basis points (1e4)
+                const feeRateDecimal = Number(swapFee) / Number(FEE_ACCURACY); // swapFee is in basis points (1e4)
                 const dailyFeesUsd = totalVolumeUsd * feeRateDecimal / 2;
 
                 const tvlUsd = reserve0Float * price0 + reserve1Float * price1;
