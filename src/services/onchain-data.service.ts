@@ -138,7 +138,7 @@ export class OnchainDataService implements OnModuleInit {
                 const price1 = token1.usdPrice ?? 0;
 
                 const totalVolumeUsd = volumeToken0 * price0 + volumeToken1 * price1;
-                const feeRateDecimal = Number(swapFee) / Number(FEE_ACCURACY); // swapFee is in basis points (1e4)
+                const feeRateDecimal = Number(swapFee) / Number(FEE_ACCURACY); // swapFee is denominated in 1e6 (FEE_ACCURACY)
                 const dailyFeesUsd = totalVolumeUsd * feeRateDecimal / 2;
 
                 const tvlUsd = reserve0Float * price0 + reserve1Float * price1;
