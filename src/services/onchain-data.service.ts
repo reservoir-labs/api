@@ -230,37 +230,39 @@ export class OnchainDataService implements OnModuleInit {
     }
 
     private async fetchToken(address: Address): Promise<IToken> {
-        if (address in this.tokens) return this.tokens[address];
-
-        const tokenCalls = [
-            {
-                ...this.getContract(address, erc20Abi),
-                functionName: 'symbol',
-            },
-            {
-                ...this.getContract(address, erc20Abi),
-                functionName: 'name',
-            },
-            {
-                ...this.getContract(address, erc20Abi),
-                functionName: 'decimals',
-            },
-        ];
-
-        const [symbolResult, nameResult, decimalsResult] = await this.publicClient.multicall({
-            contracts: tokenCalls,
-        });
-
-        const token: IToken = {
-            name: nameResult.result as string,
-            symbol: symbolResult.result as string,
+        
+        const token = this.tokens[address];
+        let symbolResult, nameResult, decimalsResult;
+        if (!token) {
+            const tokenCalls = [
+                {
+                    ...this.getContract(address, erc20Abi),
+                    functionName: 'symbol',
+                },
+                {
+                    ...this.getContract(address, erc20Abi),
+                    functionName: 'name',
+                },
+                {
+                    ...this.getContract(address, erc20Abi),
+                    functionName: 'decimals',
+                },
+            ];
+            [symbolResult, nameResult, decimalsResult] = await this.publicClient.multicall({
+                contracts: tokenCalls,
+            });
+        }
+        
+        const symbol = token ? token.symbol : symbolResult.result as string;
+        this.tokens[address] = {
+            name: token ? token.name : nameResult.result as string,
+            symbol,
             contractAddress: address,
-            usdPrice: await this.coingeckoService.getCoinPrice(symbolResult.result as string),
-            decimals: decimalsResult.result as number,
+            usdPrice: await this.coingeckoService.getCoinPrice(symbol),
+            decimals: token ? token.decimals : decimalsResult.result as number,
         };
 
-        this.tokens[address] = token;
-        return token;
+        return this.tokens[address];
     }
 
     public async onModuleInit(): Promise<void> {

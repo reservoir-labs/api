@@ -8,8 +8,7 @@ export const CONTRACTS = {
 
 // Time intervals (in ms)
 export const INTERVALS = {
-  FETCH_DATA: 300000 as const, // 5 minutes
-  BLOCK_RANGE: 8640 as const, // Number of blocks to look back
+  FETCH_DATA: 120_000 as const, // 2 minutes
 } as const;
 
 export const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
