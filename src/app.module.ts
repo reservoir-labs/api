@@ -5,6 +5,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
 import { CoinGeckoService } from "@services/coin-gecko.service";
+import { DeFiLlamaService } from "@services/defillama.service";
 import { OnchainDataService } from "@services/onchain-data.service";
 import { config } from "@src/config";
 
@@ -22,6 +23,7 @@ import { config } from "@src/config";
     providers: [
         OnchainDataService,
         CoinGeckoService,
+        DeFiLlamaService,
     ],
     exports: [],
 })
