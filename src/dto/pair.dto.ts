@@ -90,7 +90,7 @@ export class PairDto implements IPair {
   swapApr?: number;
 
   @ApiProperty({
-    description: 'APR for supplying liquidity',
+    description: 'APR for supplying liquidity, expressed as a percentage',
     example: '3.5'
   })
   supplyApr?: number;

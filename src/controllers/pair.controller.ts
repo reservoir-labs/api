@@ -1,5 +1,5 @@
 import { PairDto } from '../dto/pair.dto';
-import { IPair, IPairs } from "@interfaces/pair";
+import { IPair } from "@interfaces/pair";
 import { BadRequestException, Controller, Get, NotFoundException, Param } from "@nestjs/common";
 import { ApiTags, ApiResponse, ApiOperation } from "@nestjs/swagger";
 import { OnchainDataService } from "@services/onchain-data.service";
@@ -18,8 +18,8 @@ export class PairController {
         type: PairDto,
         isArray: true
     })
-    public getPairs(): IPairs {
-        return this.onchainDataService.getAllPairs();
+    public getPairs(): PairDto[] {
+        return Object.values(this.onchainDataService.getAllPairs());
     }
 
     @Get(":address")
