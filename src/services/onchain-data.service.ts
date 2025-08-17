@@ -90,65 +90,17 @@ export class OnchainDataService implements OnModuleInit {
             const toBlock = latestBlock;
             const fromBlock = fromBlock24h;
 
-            // Fetch logs in 2048-block chunks to avoid RPC limits
-            const swapLogs: any[] = [];
-            for (let start = fromBlock; start <= toBlock; start += 2048n) {
-                const end = start + 2047n > toBlock ? toBlock : start + 2047n;
-                const logs = await this.publicClient.getLogs({
-                    address: pairAddress,
-                    event: {
-                        type: 'event',
-                        name: 'Swap',
-                        inputs: [
-                            { type: 'address', name: 'sender', indexed: true },
-                            { type: 'bool', name: 'zeroForOne' },
-                            { type: 'uint256', name: 'amountIn' },
-                            { type: 'uint256', name: 'amountOut' },
-                            { type: 'address', name: 'to', indexed: true }
-                        ],
-                    },
-                    fromBlock: start,
-                    toBlock: end,
-                });
-                swapLogs.push(...logs);
-            }
-
-            let accToken0Volume: bigint = 0n;
-            let accToken1Volume: bigint = 0n;
-
-            for (const log of swapLogs) {
-                const { args } = log;
-                if (args) {
-                    if (args.amountIn !== undefined && args.amountOut !== undefined) {
-                        accToken0Volume += args.zeroForOne ? BigInt(args.amountIn) : BigInt(args.amountOut);
-                        accToken1Volume += args.zeroForOne ? BigInt(args.amountOut) : BigInt(args.amountIn);
-                    }
-                }
-            }
-
-            // Calculate swap APR
-            let swapAprValue = 0;
-            try {
-                const volumeToken0 = Number(formatUnits(accToken0Volume, token0.decimals));
-                const volumeToken1 = Number(formatUnits(accToken1Volume, token1.decimals));
-                const reserve0Float = Number(formatUnits(reserve0, token0.decimals));
-                const reserve1Float = Number(formatUnits(reserve1, token1.decimals));
-
-                const price0 = token0.usdPrice ?? 0;
-                const price1 = token1.usdPrice ?? 0;
-
-                const totalVolumeUsd = volumeToken0 * price0 + volumeToken1 * price1;
-                const feeRateDecimal = Number(swapFee) / Number(FEE_ACCURACY); // swapFee is denominated in 1e6 (FEE_ACCURACY)
-                const dailyFeesUsd = totalVolumeUsd * feeRateDecimal / 2;
-
-                const tvlUsd = reserve0Float * price0 + reserve1Float * price1;
-
-                if (tvlUsd > 0) {
-                    swapAprValue = (dailyFeesUsd * 365 / tvlUsd) * 100;
-                }
-            } catch (error) {
-                this.logger.warn(`Failed to calculate swap APR for pair ${pairAddress}: ${error}`);
-            }
+            // Fetch swap volumes and APR for the last 24h
+            const { accToken0Volume, accToken1Volume, swapApr } = await this.fetchVolumesAndSwapApr(
+                pairAddress,
+                latestBlock,
+                fromBlock24h,
+                token0,
+                token1,
+                reserve0,
+                reserve1,
+                swapFee as bigint,
+            );
 
             this.pairs[pairAddress] = {
                 address: pairAddress,
@@ -164,7 +116,7 @@ export class OnchainDataService implements OnModuleInit {
                 token1Volume: formatUnits(accToken1Volume, token1.decimals),
                 token0Managed: formatUnits(token0Managed as bigint, token0.decimals),
                 token1Managed: formatUnits(token1Managed as bigint, token1.decimals),
-                swapApr: swapAprValue,
+                swapApr: swapApr,
             };
         });
 
@@ -263,6 +215,77 @@ export class OnchainDataService implements OnModuleInit {
         };
 
         return this.tokens[address];
+    }
+
+    private async fetchVolumesAndSwapApr(
+        pairAddress: Address,
+        toBlock: bigint,
+        fromBlock: bigint,
+        token0: IToken,
+        token1: IToken,
+        reserve0: bigint,
+        reserve1: bigint,
+        swapFee: bigint,
+    ): Promise<{ accToken0Volume: bigint; accToken1Volume: bigint; swapApr: number }> {
+        // Fetch logs in 2048-block chunks to avoid RPC limits
+        const swapLogs: any[] = [];
+        for (let start = fromBlock; start <= toBlock; start += 2048n) {
+            const end = start + 2047n > toBlock ? toBlock : start + 2047n;
+            const logs = await this.publicClient.getLogs({
+                address: pairAddress,
+                event: {
+                    type: 'event',
+                    name: 'Swap',
+                    inputs: [
+                        { type: 'address', name: 'sender', indexed: true },
+                        { type: 'bool', name: 'zeroForOne' },
+                        { type: 'uint256', name: 'amountIn' },
+                        { type: 'uint256', name: 'amountOut' },
+                        { type: 'address', name: 'to', indexed: true },
+                    ],
+                },
+                fromBlock: start,
+                toBlock: end,
+            });
+            swapLogs.push(...logs);
+        }
+
+        let accToken0Volume: bigint = 0n;
+        let accToken1Volume: bigint = 0n;
+
+        for (const log of swapLogs) {
+            const { args } = log;
+            if (args && args.amountIn !== undefined && args.amountOut !== undefined) {
+                accToken0Volume += args.zeroForOne ? BigInt(args.amountIn) : BigInt(args.amountOut);
+                accToken1Volume += args.zeroForOne ? BigInt(args.amountOut) : BigInt(args.amountIn);
+            }
+        }
+
+        // Calculate swap APR
+        let swapAprValue = 0;
+        try {
+            const volumeToken0 = Number(formatUnits(accToken0Volume, token0.decimals));
+            const volumeToken1 = Number(formatUnits(accToken1Volume, token1.decimals));
+            const reserve0Float = Number(formatUnits(reserve0, token0.decimals));
+            const reserve1Float = Number(formatUnits(reserve1, token1.decimals));
+
+            const price0 = token0.usdPrice ?? 0;
+            const price1 = token1.usdPrice ?? 0;
+
+            const totalVolumeUsd = volumeToken0 * price0 + volumeToken1 * price1;
+            const feeRateDecimal = Number(swapFee) / Number(FEE_ACCURACY);
+            const dailyFeesUsd = (totalVolumeUsd * feeRateDecimal) / 2;
+
+            const tvlUsd = reserve0Float * price0 + reserve1Float * price1;
+
+            if (tvlUsd > 0) {
+                swapAprValue = (dailyFeesUsd * 365) / tvlUsd * 100;
+            }
+        } catch (error) {
+            this.logger.warn(`Failed to calculate swap APR for pair ${pairAddress}: ${error}`);
+        }
+
+        return { accToken0Volume, accToken1Volume, swapApr: swapAprValue };
     }
 
     public async onModuleInit(): Promise<void> {
